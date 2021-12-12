@@ -66,6 +66,7 @@ namespace move_base {
     recovery_trigger_ = PLANNING_R;
 
     //get some parameters that will be global to the move base node
+    // 设置move_base_node中的全局参数，如果在yaml文件中没有设置对应的参数，则默认使用param函数中最后的参数
     std::string global_planner, local_planner;
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
@@ -81,6 +82,7 @@ namespace move_base {
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
     // parameters of make_plan service
+    // make_plan 服务的参数
     private_nh.param("make_plan_clear_costmap", make_plan_clear_costmap_, true);
     private_nh.param("make_plan_add_unreachable_goal", make_plan_add_unreachable_goal_, true);
 
@@ -90,6 +92,7 @@ namespace move_base {
     controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();
 
     //set up the planner's thread
+    // 新建planner线程，入口函数为MoveBase::planThread
     planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
 
     //for commanding the base

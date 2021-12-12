@@ -104,7 +104,7 @@ namespace move_base {
     private:
       /**
        * @brief  A service call that clears the costmaps of obstacles
-       * @param req The service request 
+       * @param req The service request
        * @param resp The service response
        * @return True if the service call succeeds, false otherwise
        */
@@ -128,7 +128,7 @@ namespace move_base {
 
       /**
        * @brief  Load the recovery behaviors for the navigation stack from the parameter server
-       * @param node The ros::NodeHandle to be used for loading parameters 
+       * @param node The ros::NodeHandle to be used for loading parameters
        * @return True if the recovery behaviors were loaded successfully, false otherwise
        */
       bool loadRecoveryBehaviors(ros::NodeHandle node);
@@ -176,15 +176,15 @@ namespace move_base {
 
       tf2_ros::Buffer& tf_;
 
-      MoveBaseActionServer* as_;
+      MoveBaseActionServer* as_;  // actionlib的服务器
 
-      boost::shared_ptr<nav_core::BaseLocalPlanner> tc_;
+      boost::shared_ptr<nav_core::BaseLocalPlanner> tc_;  // 局部路径规划器加载并创建实例后的指针
       costmap_2d::Costmap2DROS* planner_costmap_ros_, *controller_costmap_ros_;
 
-      boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;   // 全局路径规划器
       std::string robot_base_frame_, global_frame_;
 
-      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;  // 恢复行为，一般默认是转圈圈，也可以自定义其他的行为
       std::vector<std::string> recovery_behavior_names_;
       unsigned int recovery_index_;
 
@@ -206,26 +206,33 @@ namespace move_base {
 
       ros::Time last_valid_plan_, last_valid_control_, last_oscillation_reset_;
       geometry_msgs::PoseStamped oscillation_pose_;
+
+      // 以插件形式实现全局规划器、局部规划器和丢失时恢复规划器。
+      // 插件形式可以实现随时动态地加载C++类库，但需要在包中注册该插件，不用这个的话需要提前链接（相当于运行时加载）
       pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_;
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
       pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
-      //set up plan triple buffer
+      // set up plan triple buffer
+      // 一般保存规划器中刚刚算出的路径，然后将其给latest_plan_
       std::vector<geometry_msgs::PoseStamped>* planner_plan_;
+      //作为一个桥梁，在MoveBase::executeCycle中传递给controller_plan_
       std::vector<geometry_msgs::PoseStamped>* latest_plan_;
       std::vector<geometry_msgs::PoseStamped>* controller_plan_;
 
-      //set up the planner's thread
+      // set up the planner's thread
       bool runPlanner_;
       boost::recursive_mutex planner_mutex_;
+      // boost的一种结合了互斥锁的用法，可以使一个线程进入睡眠状态，然后在另一个线程触发唤醒。
       boost::condition_variable_any planner_cond_;
+      // 通过这个值将goal在MoveBase::executeCb与MoveBase::planThread()之间传递
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
-      
+
       void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
 
       move_base::MoveBaseConfig last_config_;
