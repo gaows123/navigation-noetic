@@ -64,16 +64,16 @@ namespace move_base {
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
 
   enum MoveBaseState {
-    PLANNING,
-    CONTROLLING,
-    CLEARING
+    PLANNING, // 正在规划路径的状态
+    CONTROLLING, // 控制机器人运动的状态
+    CLEARING  // 规划路径或者控制失败，处于恢复或者清除
   };
 
   enum RecoveryTrigger
   {
-    PLANNING_R,
-    CONTROLLING_R,
-    OSCILLATION_R
+    PLANNING_R,  // 全局规划失败
+    CONTROLLING_R, // 局部轨迹规划失败
+    OSCILLATION_R // 长时间在小区域运动
   };
 
   /**
