@@ -222,10 +222,10 @@ namespace move_base {
 
       // set up the planner's thread
       bool runPlanner_;
-      boost::recursive_mutex planner_mutex_;
       // boost的一种结合了互斥锁的用法，可以使一个线程进入睡眠状态，然后在另一个线程触发唤醒。
-      boost::condition_variable_any planner_cond_;
+      boost::recursive_mutex planner_mutex_;
       // 通过这个值将goal在MoveBase::executeCb与MoveBase::planThread()之间传递
+      boost::condition_variable_any planner_cond_;
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 

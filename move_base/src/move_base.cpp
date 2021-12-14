@@ -585,6 +585,7 @@ namespace move_base {
       // 确认是否要运行路径规划器(这里已经加锁)
       while(wait_for_wake || !runPlanner_){
         //if we should not be running the planner then suspend this thread
+        // 暂时关闭路径规划线程
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
         planner_cond_.wait(lock);
         wait_for_wake = false;
@@ -670,6 +671,7 @@ namespace move_base {
     }
   }
 
+  // 控制的主要函数
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     // 如果目标点朝向的四元数不合法，退出该函数
@@ -686,14 +688,17 @@ namespace move_base {
     // 现在我们有了目标点，开始路径规划
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
+    // 全局规划标志位设为真
     runPlanner_ = true;
+    // 由于全局规划器线程绑定的函数plannerThread()里有planner_cond_对象的wait函数，在这里调用notify会直接启动全局规划器线程，进行全局路径规划
     // 唤醒等待条件变量的一个线程：即调用planner_cond_.wait()的MoveBase::planThread()
     planner_cond_.notify_one();
     lock.unlock();
 
     current_goal_pub_.publish(goal);
-
+    // 设置局部规划频率
     ros::Rate r(controller_frequency_);
+    // 如果代价地图被关闭，则打开
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Starting up costmaps that were shut down previously");
       planner_costmap_ros_->start();
@@ -701,12 +706,17 @@ namespace move_base {
     }
 
     //we want to make sure that we reset the last time we had a valid plan and control
+    // 上一次的局部规划时间更新为当前时间
     last_valid_control_ = ros::Time::now();
+    // 上一次的全局规划时间更新为当前时间
     last_valid_plan_ = ros::Time::now();
+    // 上一次的震荡重置时间更新为当前时间
     last_oscillation_reset_ = ros::Time::now();
+    // 对同一目标的全局规划次数记录归为0
     planning_retries_ = 0;
 
     ros::NodeHandle n;
+    // 全局规划完成，接下来循环调用executeCycle函数来控制机器人进行局部规划，完成相应跟随。
     while(n.ok())
     {
       if(c_freq_change_)
@@ -716,6 +726,14 @@ namespace move_base {
         r = ros::Rate(controller_frequency_);
         c_freq_change_ = false;
       }
+
+    /* 这里需要进行判断：
+
+      ① 如果action的服务器被抢占，可能是“局部规划进行过程中收到新的目标”，也可能是“收到取消行动的命令”。
+
+      如果是收到新目标，那么放弃当前目标，重复上面对目标进行的操作，使用新目标。并重新全局规划；
+      如果是收到取消行动命令，直接结束返回。
+      ② 如果服务器未被抢占，或被抢占的if结构已执行完毕，接下来开始局部规划，调用executeCycle函数，并记录局部控制起始时间。 */
 
       //action_server是否有抢占请求，根据参考1第8点的说法，SimpleActionServer的政策是，
       // 新的goal都会抢占旧的goal，这里应该只是为了清除新goal的一些状态。
@@ -1216,12 +1234,14 @@ namespace move_base {
     lock.unlock();
 
     // Reset statemachine
+    // 重置状态机并停止机器人运动
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
+    // 关闭代价地图
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps");
       planner_costmap_ros_->stop();
@@ -1229,6 +1249,7 @@ namespace move_base {
     }
   }
 
+  // 获取机器人的位姿，获取的过程不复杂，但是注意这里会检测各种可能异常，并抛出异常。是一个很重要的导航模块是否正常的检测过程
   bool MoveBase::getRobotPose(geometry_msgs::PoseStamped& global_pose, costmap_2d::Costmap2DROS* costmap)
   {
     tf2::toMsg(tf2::Transform::getIdentity(), global_pose.pose);
