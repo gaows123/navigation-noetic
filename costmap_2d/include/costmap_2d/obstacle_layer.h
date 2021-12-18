@@ -64,6 +64,7 @@ class ObstacleLayer : public CostmapLayer
 public:
   ObstacleLayer()
   {
+    // 将障碍层设置为空值
     costmap_ = NULL;  // this is the unsigned char* member of parent class Costmap2D.
   }
 
@@ -117,22 +118,22 @@ protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
   /**
-   * @brief  Get the observations used to mark space
-   * @param marking_observations A reference to a vector that will be populated with the observations
-   * @return True if all the observation buffers are current, false otherwise
+   * @brief 获取用于标记空间的观察值. Get the observations used to mark space
+   * @param marking_observations 对将填充观测值的向量的引用. A reference to a vector that will be populated with the observations
+   * @return 如果所有观察缓冲区都是当前的，则返回True，否则返回false. True if all the observation buffers are current, false otherwise
    */
   bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations) const;
 
   /**
-   * @brief  Get the observations used to clear space
-   * @param clearing_observations A reference to a vector that will be populated with the observations
-   * @return True if all the observation buffers are current, false otherwise
+   * @brief 获取用于清除空间的观测值
+   * @param clearing_observations 对将填充观测值的向量的引用
+   * @return 如果所有观察缓冲区都是当前的，则返回True，否则返回false
    */
   bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
 
   /**
-   * @brief  Clear freespace based on one observation
-   * @param clearing_observation The observation used to raytrace
+   * @brief  根据单次的观测来清除自由空间
+   * @param clearing_observation 用于raytrace的观测
    * @param min_x
    * @param min_y
    * @param max_x
@@ -146,21 +147,27 @@ protected:
 
   std::vector<geometry_msgs::Point> transformed_footprint_;
   bool footprint_clearing_enabled_;
-  void updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, 
+  void updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                        double* max_x, double* max_y);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
 
+  // 用于将激光扫描到的信息投影到点云集中
   laser_geometry::LaserProjection projector_;  ///< @brief Used to project laser scans into point clouds
 
+  // 用于观察消息筛选器
   std::vector<boost::shared_ptr<message_filters::SubscriberBase> > observation_subscribers_;  ///< @brief Used for the observation message filters
+  // 用于确保每个传感器都可以使用变换
   std::vector<boost::shared_ptr<tf2_ros::MessageFilterBase> > observation_notifiers_;  ///< @brief Used to make sure that transforms are available for each sensor
+  // 用于存储来自各种传感器的观测值
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > observation_buffers_;  ///< @brief Used to store observations from various sensors
+  // 用于存储用于标记障碍物的观察缓冲器
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > marking_buffers_;  ///< @brief Used to store observation buffers used for marking obstacles
+  // 用于存储用于清除障碍物的观察缓冲器
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > clearing_buffers_;  ///< @brief Used to store observation buffers used for clearing obstacles
 
-  // Used only for testing purposes
+  // 仅用于测试目的的观测向量
   std::vector<costmap_2d::Observation> static_clearing_observations_, static_marking_observations_;
 
   bool rolling_window_;

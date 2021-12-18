@@ -42,6 +42,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+// 障碍层插件和名称空间声明:
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
@@ -56,6 +57,9 @@ namespace costmap_2d
 
 void ObstacleLayer::onInitialize()
 {
+  // 创建多个节点句柄nh("~/" + name_)、g_nh、prefix_nh和source_node(nh, source)，
+  // 通过方法param(param_name, param_val, default_val)从参数服务器检索指示的值param_name,
+  // 若成功，则将结果存储在param_val中，否则将default_val赋值给param_val。
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
 
@@ -66,6 +70,7 @@ void ObstacleLayer::onInitialize()
   else
     default_value_ = FREE_SPACE;
 
+  // 设置障碍物层的代价值、x值、y值、分辨率和原点坐标
   ObstacleLayer::matchSize();
   current_ = true;
 
@@ -75,10 +80,12 @@ void ObstacleLayer::onInitialize()
 
   std::string topics_string;
   // get the topics that we'll subscribe to from the parameter server
+  // 从参数服务器获取所订阅的话题
   nh.param("observation_sources", topics_string, std::string(""));
   ROS_INFO("    Subscribed to Topics: %s", topics_string.c_str());
 
   // now we need to split the topics based on whitespace which we can use a stringstream for
+  // 使用字符串流,方便用空格分开话题
   std::stringstream ss(topics_string);
 
   std::string source;
@@ -87,6 +94,7 @@ void ObstacleLayer::onInitialize()
     ros::NodeHandle source_node(nh, source);
 
     // get the parameters for the specific topic
+    // 从特定话题获取参数
     double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
@@ -111,6 +119,7 @@ void ObstacleLayer::onInitialize()
     std::string raytrace_range_param_name, obstacle_range_param_name;
 
     // get the obstacle range for the sensor
+    // 确定传感器所能探测到障碍物的最大范围值
     double obstacle_range = 2.5;
     if (source_node.searchParam("obstacle_range", obstacle_range_param_name))
     {
@@ -118,6 +127,7 @@ void ObstacleLayer::onInitialize()
     }
 
     // get the raytrace range for the sensor
+    // 确定传感器所能探测到周围环境的最大范围值
     double raytrace_range = 3.0;
     if (source_node.searchParam("raytrace_range", raytrace_range_param_name))
     {
@@ -128,6 +138,7 @@ void ObstacleLayer::onInitialize()
               sensor_frame.c_str());
 
     // create an observation buffer
+    // 创建观察缓冲区ObservationBuffer(),push_back()为在observation_buffers_这个vector中的最后添加一个元素
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
@@ -135,10 +146,13 @@ void ObstacleLayer::onInitialize()
                                      sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
+    // 检查是否将此缓冲区添加到标记观察缓冲区
+    // 此时marking_buffers_虽添加了观察区的数据，但还未调用传感器数据回调函数，其值为空值
     if (marking)
       marking_buffers_.push_back(observation_buffers_.back());
 
     // check if we'll also add this buffer to our clearing observation buffers
+    // 检查是否还要将此缓冲区添加到清除观察缓冲区
     if (clearing)
       clearing_buffers_.push_back(observation_buffers_.back());
 
@@ -148,6 +162,7 @@ void ObstacleLayer::onInitialize()
         source.c_str(), topic.c_str(), global_frame_.c_str(), expected_update_rate, observation_keep_time);
 
     // create a callback for the topic
+    // 为"PointCloud2"、"PointCloud"和"LaserScan"类型的数据，分调用回调函数，用于传感器数据的处理
     if (data_type == "LaserScan")
     {
       boost::shared_ptr < message_filters::Subscriber<sensor_msgs::LaserScan>
@@ -314,6 +329,7 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   buffer->unlock();
 }
 
+// 处理缓冲点云pointcloud消息的回调函数
 void ObstacleLayer::pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message,
                                                const boost::shared_ptr<ObservationBuffer>& buffer)
 {
@@ -331,6 +347,7 @@ void ObstacleLayer::pointCloudCallback(const sensor_msgs::PointCloudConstPtr& me
   buffer->unlock();
 }
 
+// 处理缓冲点云pointcloud2消息的回调函数
 void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message,
                                                 const boost::shared_ptr<ObservationBuffer>& buffer)
 {
@@ -340,32 +357,44 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
+// 传入参数
+// robot_x、robot_y和robot_yaw 机器人的x，y坐标值和偏航角
+// min_y、min_y、max_x和max_y 更新边界轮廓
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  if (rolling_window_)
+  if (rolling_window_)// 判断是否调用滚动窗口，若是，则进行更新原点坐标
+  // updateOrigin() 确定更新边界轮廓的原点坐标
+  // getSizeInMetersX() 返回的是 （size_x_ - 1 + 0.5) * resolution_
+  // getSizeInMetersY() 返回的是 （size_y_ - 1 + 0.5) * resolution_
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
+  // 确定更新边界轮廓尺寸
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
 
   // get the marking observations
+  // 获取标记观测
   current = current && getMarkingObservations(observations);
 
   // get the clearing observations
+  // 获取清除观测
   current = current && getClearingObservations(clearing_observations);
 
   // update the global current status
+  // 更新全局当前状态
   current_ = current;
 
   // raytrace freespace
+  // 光线跟踪自由空间
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
   {
     raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
   }
 
   // place the new obstacles into a priority queue... each with a priority of zero to begin with
+  // 将新障碍物放入优先级队列...每个都以零优先级开始
   for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
   {
     const Observation& obs = *it;
@@ -383,6 +412,8 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       double px = *iter_x, py = *iter_y, pz = *iter_z;
 
       // if the obstacle is too high or too far away from the robot we won't add it
+      // 如果障碍物离机器人太高或太远，将不被考虑在内
+
       if (pz > max_obstacle_height_)
       {
         ROS_DEBUG("The point is too high");
@@ -390,10 +421,12 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       }
 
       // compute the squared distance from the hitpoint to the pointcloud's origin
+      // 计算从命中点到点云原点的平方距离
       double sq_dist = (px - obs.origin_.x) * (px - obs.origin_.x) + (py - obs.origin_.y) * (py - obs.origin_.y)
           + (pz - obs.origin_.z) * (pz - obs.origin_.z);
 
       // if the point is far enough away... we won't consider it
+      // 如果该点足够远，将不会考虑
       if (sq_dist >= sq_obstacle_range)
       {
         ROS_DEBUG("The point is too far away");
@@ -401,6 +434,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       }
 
       // now we need to compute the map coordinates for the observation
+      // 需要计算观测的地图坐标
       unsigned int mx, my;
       if (!worldToMap(px, py, mx, my))
       {
@@ -410,13 +444,14 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
       unsigned int index = getIndex(mx, my);
       costmap_[index] = LETHAL_OBSTACLE;
+      // 更新参数中指定的边界框以包括位置(x,y)
       touch(px, py, min_x, min_y, max_x, max_y);
     }
   }
 
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
-
+// 更新机器人的footprint
 void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                     double* max_x, double* max_y)
 {
@@ -428,7 +463,7 @@ void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot
       touch(transformed_footprint_[i].x, transformed_footprint_[i].y, min_x, min_y, max_x, max_y);
     }
 }
-
+// 更新代价值
 void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (footprint_clearing_enabled_)
@@ -439,16 +474,23 @@ void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
   switch (combination_method_)
   {
     case 0:  // Overwrite
+      // 覆盖更新（updateWithOverwrite），将所操作的地图层的每个有效值（不含未知状态（NO_INFORMATION））写进主栅格地图
+    	// master_grid----->在所操作的地图层的特定边界盒子（二维环境为矩形）的主栅格对象，
+    	// min_i、min_j----->特定边界盒子的左下角顶点的x、y坐标
+    	// max_i、max_j----->特定边界盒子的右上角顶点的x、y坐标
       updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
       break;
     case 1:  // Maximum
+      // 最大值更新（updateWithMax），将主栅格的新值更新为所操作的地图层值和主栅格层值中的最大值
+    	// 如果主代价值是未知状态（NO_INFORMATION），则被覆盖更新
+    	// 如果所操作的地图层的代价值是未知状态（NO_INFORMATION），则主代价值不变
       updateWithMax(master_grid, min_i, min_j, max_i, max_j);
       break;
     default:  // Nothing
       break;
   }
 }
-
+// 添加静态观察
 void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing)
 {
   if (marking)
@@ -456,7 +498,7 @@ void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool mark
   if (clearing)
     static_clearing_observations_.push_back(obs);
 }
-
+// 清除静态观察
 void ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
 {
   if (marking)
@@ -464,7 +506,7 @@ void ObstacleLayer::clearStaticObservations(bool marking, bool clearing)
   if (clearing)
     static_clearing_observations_.clear();
 }
-
+// 获取标记观察
 bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations) const
 {
   bool current = true;
@@ -480,7 +522,7 @@ bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_obs
                               static_marking_observations_.begin(), static_marking_observations_.end());
   return current;
 }
-
+// 获取清除观察
 bool ObstacleLayer::getClearingObservations(std::vector<Observation>& clearing_observations) const
 {
   bool current = true;
@@ -515,6 +557,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   }
 
   // we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
+  // 我们可以在内循环外预先计算地图的点...我们以后需要这些
   double origin_x = origin_x_, origin_y = origin_y_;
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
@@ -525,7 +568,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   // for each point in the cloud, we want to trace a line from the origin and clear obstacles along it
   sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
-
+  // 我们可以在内循环外预先计算地图的点...我们以后需要这些
   for (; iter_x != iter_x.end(); ++iter_x, ++iter_y)
   {
     double wx = *iter_x;
@@ -533,6 +576,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
 
     // now we also need to make sure that the enpoint we're raytracing
     // to isn't off the costmap and scale if necessary
+    // 还要确保光线跟踪到的点没有超出代价地图和比例
     double a = wx - ox;
     double b = wy - oy;
 
