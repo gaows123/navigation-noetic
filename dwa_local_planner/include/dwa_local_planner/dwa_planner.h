@@ -70,24 +70,25 @@ namespace dwa_local_planner {
   class DWAPlanner {
     public:
       /**
-       * @brief  Constructor for the planner
-       * @param name The name of the planner 
-       * @param costmap_ros A pointer to the costmap instance the planner should use
-       * @param global_frame the frame id of the tf frame to use
+       * @brief  规划器的构造
+       * @param name 规划器的名字
+       * @param costmap_ros 规划器的将用到的代价地图实例指针
+       * @param global_frame  用到的tf frame 中的frame id
        */
       DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
 
       /**
        * @brief Reconfigures the trajectory planner
        */
+      // ?DWAPlannerConfig
       void reconfigure(DWAPlannerConfig &cfg);
 
       /**
-       * @brief  Check if a trajectory is legal for a position/velocity pair
-       * @param pos The robot's position
-       * @param vel The robot's velocity
-       * @param vel_samples The desired velocity
-       * @return True if the trajectory is valid, false otherwise
+       * @brief  对于位置/速度组合，轨迹是否合法
+       * @param pos 机器人的位置
+       * @param vel 机器人的速度
+       * @param vel_samples 期望速度
+       * @return 如果是True, 轨迹合法
        */
       bool checkTrajectory(
           const Eigen::Vector3f pos,
@@ -95,11 +96,11 @@ namespace dwa_local_planner {
           const Eigen::Vector3f vel_samples);
 
       /**
-       * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
-       * @param global_pose The current position of the robot 
-       * @param global_vel The current velocity of the robot 
-       * @param drive_velocities The velocities to send to the robot base
-       * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
+       * @brief 从机器人当前的位置和速度找出最好的轨迹去执行
+       * @param global_pose 机器人的位置
+       * @param global_vel 机器人的速度
+       * @param drive_velocities 给机器人底座的速度
+       * @return  返回最高得分的轨迹, cost >= 0 意味着该轨迹可以被执行
        */
       base_local_planner::Trajectory findBestPath(
           const geometry_msgs::PoseStamped& global_pose,
@@ -107,15 +108,15 @@ namespace dwa_local_planner {
           geometry_msgs::PoseStamped& drive_velocities);
 
       /**
-       * @brief  Update the cost functions before planning
-       * @param  global_pose The robot's current pose
-       * @param  new_plan The new global plan
-       * @param  footprint_spec The robot's footprint
+       * @brief 在路径规划前更新代价函数
+       * @param  global_pose 机器人的位置
+       * @param  new_plan 新的规划路径
+       * @param  footprint_spec 机器人的footprint(机器人的底盘形状)
        *
        * The obstacle cost function gets the footprint.
        * The path and goal cost functions get the global_plan
        * The alignment cost functions get a version of the global plan
-       *   that is modified based on the global_pose 
+       *   that is modified based on the global_pose
        */
       void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
           const std::vector<geometry_msgs::PoseStamped>& new_plan,
@@ -157,6 +158,7 @@ namespace dwa_local_planner {
 
       double forward_point_distance_;
 
+      // 局部路径规划器的参考路径，来至于全局规划，可以可视化
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
       boost::mutex configuration_mutex_;

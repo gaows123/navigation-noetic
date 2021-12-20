@@ -64,7 +64,7 @@ namespace dwa_local_planner {
         setup_ = true;
       }
 
-      // update generic local planner params
+      // 更新局部规划器的通用配置参数
       base_local_planner::LocalPlannerLimits limits;
       limits.max_vel_trans = config.max_vel_trans;
       limits.min_vel_trans = config.min_vel_trans;
@@ -85,7 +85,7 @@ namespace dwa_local_planner {
       limits.theta_stopped_vel = config.theta_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
-      // update dwa specific configuration
+      // 更新dwa的特定配置
       dp_->reconfigure(config);
   }
 
@@ -119,7 +119,7 @@ namespace dwa_local_planner {
       {
         odom_helper_.setOdomTopic( odom_topic_ );
       }
-      
+
       initialized_ = true;
 
       // Warn about deprecated parameters -- remove this block in N-turtle
@@ -138,7 +138,7 @@ namespace dwa_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
-  
+
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -204,7 +204,7 @@ namespace dwa_local_planner {
     //compute what trajectory to drive along
     geometry_msgs::PoseStamped drive_cmds;
     drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();
-    
+
     // call with updated footprint
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
@@ -223,6 +223,7 @@ namespace dwa_local_planner {
     cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     //if we cannot move... tell someone
+    // 上一个周期计算出的局部路径规划或轨迹
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
       ROS_DEBUG_NAMED("dwa_local_planner",
@@ -232,7 +233,7 @@ namespace dwa_local_planner {
       return false;
     }
 
-    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.", 
+    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
                     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
 
     // Fill out the local plan
