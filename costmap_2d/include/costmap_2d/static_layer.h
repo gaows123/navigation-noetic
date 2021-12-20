@@ -84,7 +84,10 @@ private:
   bool subscribe_to_updates_;
   bool map_received_;
   bool has_updated_data_;
+
+  // *在接收到地图时，x_, y_被置为0,width_, height_ 被设为地图宽高
   unsigned int x_, y_, width_, height_;
+  //默认没有配置，使用true
   bool track_unknown_space_;
   bool use_maximum_;
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing

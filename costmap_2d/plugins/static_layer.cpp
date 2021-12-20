@@ -64,6 +64,7 @@ void StaticLayer::onInitialize()
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
 
+  // global_frame_在global_costmap时为map, local_costmap时为odom_combined
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
   std::string map_topic;
@@ -71,12 +72,17 @@ void StaticLayer::onInitialize()
   nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
 
+  //静态地图层中没有配置，使用默认的
   nh.param("track_unknown_space", track_unknown_space_, true);
   nh.param("use_maximum", use_maximum_, false);
 
   int temp_lethal_threshold, temp_unknown_cost_value;
+  //致命cost 阈值，使用默认的为100
   nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
+  //未知的区域，cost 值为255
   nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
+
+ //三层的costmap??默认没有配置，为true
   nh.param("trinary_costmap", trinary_costmap_, true);
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
@@ -86,6 +92,7 @@ void StaticLayer::onInitialize()
   if (map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
+    // 从/map中订阅地图数据，并在回调函数中使用
     ROS_INFO("Requesting the map...");
     map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
     map_received_ = false;
@@ -276,14 +283,17 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
       return;
   }
 
+  // 初始化边界
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   double wx, wy;
 
+  // 计算静态costmap地图左下角像素的坐标
   mapToWorld(x_, y_, wx, wy);
   *min_x = std::min(wx, *min_x);
   *min_y = std::min(wy, *min_y);
 
+  // 计算静态costmap地图右上角像素的坐标
   mapToWorld(x_ + width_, y_ + height_, wx, wy);
   *max_x = std::max(wx, *max_x);
   *max_y = std::max(wy, *max_y);
@@ -291,6 +301,11 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   has_updated_data_ = false;
 }
 
+/*
+ @brief：用static costmap 的值更新master costmap 的值
+*@param:master_grid： 是master costmap 地图
+* min_i,min_j,max_i,max_j 是该master costmap 地图的范围，以像素坐标表示
+*/
 void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_received_)
@@ -299,6 +314,8 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   if (!layered_costmap_->isRolling())
   {
     // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
+    // 静态costmap 会进入这里面，会获取static costmap 的cost 值，然后更新master costmap
+    //  *static costmap 的cost 值是在incomingMap函数中处理初始化的，该函数在costmap_2d 中实现
     if (!use_maximum_)
       updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
     else

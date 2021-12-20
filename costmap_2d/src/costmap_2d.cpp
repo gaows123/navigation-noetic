@@ -199,12 +199,21 @@ void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost)
   costmap_[getIndex(mx, my)] = cost;
 }
 
+
 void Costmap2D::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy) const
 {
   wx = origin_x_ + (mx + 0.5) * resolution_;
   wy = origin_y_ + (my + 0.5) * resolution_;
 }
 
+/**
+ * @brief  世界坐标系向map坐标系转换
+ * @param  wx 世界坐标系的x值
+ * @param  wy 世界坐标系的y值
+ * @param  mx 相关map坐标系下的x值
+ * @param  my 相关map坐标系下的y值
+ * @return True if the conversion was successful (legal bounds) false otherwise
+ */
 bool Costmap2D::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my) const
 {
   if (wx < origin_x_ || wy < origin_y_)
@@ -225,6 +234,7 @@ void Costmap2D::worldToMapNoBounds(double wx, double wy, int& mx, int& my) const
   my = (int)((wy - origin_y_) / resolution_);
 }
 
+// 从世界坐标（wx, wy）向地图坐标(mx, my)转换,地图没有边界
 void Costmap2D::worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) const
 {
   // Here we avoid doing any math to wx,wy before comparing them to

@@ -47,6 +47,7 @@ namespace costmap_2d
 {
 
 // convenient for storing x/y point pairs
+// 方便记录位置信息
 struct MapLocation
 {
   unsigned int x;
@@ -62,7 +63,7 @@ class Costmap2D
   friend class CostmapTester;  // Need this for gtest to work correctly
 public:
   /**
-   * @brief  Constructor for a costmap
+   * @brief  构造代价地图
    * @param  cells_size_x The x size of the map in cells
    * @param  cells_size_y The y size of the map in cells
    * @param  resolution The resolution of the map in meters/cell
@@ -140,6 +141,8 @@ public:
    * @param  my Will be set to the associated map y coordinate
    * @return True if the conversion was successful (legal bounds) false otherwise
    */
+  // 作用：从世界坐标(wx, wy)向地图坐标(mx, my)转换,不一定会转换成功，
+  // 地图坐标系小于世界坐标系，如果转换成功（合法界限），则为True；否则为false
   bool worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my) const;
 
   /**
@@ -418,13 +421,13 @@ private:
 
   mutex_t* access_;
 protected:
-  unsigned int size_x_;
-  unsigned int size_y_;
-  double resolution_;
-  double origin_x_;
-  double origin_y_;
-  unsigned char* costmap_;
-  unsigned char default_value_;
+  unsigned int size_x_;  // 表示x方向最大距离（x方向像素点个数）
+  unsigned int size_y_;  // 表示y方向最大距离（y方向像素点个数）
+  double resolution_;  // 分辨率大小，像素点之间的距离
+  double origin_x_; // 地图的下标计数原点x
+  double origin_y_;  // 地图的下标计数原点y
+  unsigned char* costmap_;  // 地图数据
+  unsigned char default_value_;  // 默认代价值
 
   class MarkCell
   {
