@@ -102,26 +102,26 @@ public:
       bool discretize_by_time = false);
 
   /**
-   * This function is to be called only when parameters change
+   * @brief 只用在参数被改变的时候，该函数才被调用
    *
    * @param sim_granularity granularity of collision detection
    * @param angular_sim_granularity angular granularity of collision detection
-   * @param use_dwa whether to use DWA or trajectory rollout
-   * @param sim_period distance between points in one trajectory
+   * @param use_dwa 是否使用DWA（不是则使用trajectory rollout）
+   * @param sim_period 同一轨迹中两点之间的距离
    */
   void setParameters(double sim_time,
       double sim_granularity,
       double angular_sim_granularity,
-      bool use_dwa = false,
+      bool use_dwa = false,    // 默认使用trajectory rollout
       double sim_period = 0.0);
 
   /**
-   * Whether this generator can create more trajectories
+   *  局部路径规划器是否可以产生多个轨迹
    */
   bool hasMoreTrajectories();
 
   /**
-   * Whether this generator can create more trajectories
+   *  局部路径规划器是否可以产生多个轨迹
    */
   bool nextTrajectory(Trajectory &traj);
 

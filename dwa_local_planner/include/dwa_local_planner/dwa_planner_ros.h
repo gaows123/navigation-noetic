@@ -60,18 +60,17 @@
 namespace dwa_local_planner {
   /**
    * @class DWAPlannerROS
-   * @brief ROS Wrapper for the DWAPlanner that adheres to the
-   * BaseLocalPlanner interface and can be used as a plugin for move_base.
+   * @brief DWAPlannerROS是封装类，提供了与move_base的接口，作为move_base的插件
    */
   class DWAPlannerROS : public nav_core::BaseLocalPlanner {
     public:
       /**
-       * @brief  Constructor for DWAPlannerROS wrapper
+       * @brief DWAPlannerROS 封装类的构造
        */
       DWAPlannerROS();
 
       /**
-       * @brief  Constructs the ros wrapper
+       * @brief  构建ros的封装
        * @param name The name to give this instance of the trajectory planner
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to trajectories

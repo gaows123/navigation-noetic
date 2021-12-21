@@ -80,6 +80,7 @@ namespace move_base {
    * @class MoveBase
    * @brief A class that uses the actionlib::ActionServer interface that moves the robot base to a goal location.
    */
+  // move_base是路径与速度规划的大类
   class MoveBase {
     public:
       /**

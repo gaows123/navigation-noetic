@@ -146,7 +146,7 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
     private:
-
+      // planner_util是规划器辅助对象， 为局部规划器提供了代价地图，坐标变换，全局规划等算法输入
       base_local_planner::LocalPlannerUtil *planner_util_;
 
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop

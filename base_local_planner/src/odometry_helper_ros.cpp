@@ -66,7 +66,7 @@ void OdometryHelperRos::getOdom(nav_msgs::Odometry& base_odom) {
 
 
 void OdometryHelperRos::getRobotVel(geometry_msgs::PoseStamped& robot_vel) {
-  // Set current velocities from odometry
+  // 从里程计得到当前速度
   geometry_msgs::Twist global_vel;
   {
     boost::mutex::scoped_lock lock(odom_mutex_);
