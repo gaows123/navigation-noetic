@@ -68,13 +68,13 @@ public:
   ~SimpleTrajectoryGenerator() {}
 
   /**
-   * @param pos current robot position
-   * @param vel current robot velocity
-   * @param limits Current velocity limits
-   * @param vsamples: in how many samples to divide the given dimension
-   * @param use_acceleration_limits: if true use physical model, else idealized robot model
-   * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
-   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
+   * @param pos 当前位置
+   * @param vel 当前速度
+   * @param limits 速度限制
+   * @param vsamples: in how many samples to divide the given dimension 分成多少哥样本
+   * @param use_acceleration_limits: true时，用客观物理模型, 不然用理想的机器人模型
+   * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from. 用来产生局部轨迹的附加的速度样本(不怎么用到)
+   * @param discretize_by_time 如果为true,  路径基于相同时间步长端被分段，不然基于等距的步长
    */
   void initialise(
       const Eigen::Vector3f& pos,
@@ -86,12 +86,14 @@ public:
       bool discretize_by_time = false);
 
   /**
-   * @param pos current robot position
-   * @param vel current robot velocity
-   * @param limits Current velocity limits
-   * @param vsamples: in how many samples to divide the given dimension
-   * @param use_acceleration_limits: if true use physical model, else idealized robot model
-   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
+   * @brief  这里重载了initialise，跟上一个initialise相比，少了输入参数additional_samples
+   *
+   * @param pos 当前位置
+   * @param vel 当前速度
+   * @param limits 速度限制
+   * @param vsamples: in how many samples to divide the given dimension 分成多少哥样本
+   * @param use_acceleration_limits: true时，用客观物理模型, 不然用理想的机器人模型
+   * @param discretize_by_time 如果为true,  路径基于相同时间步长端被分段，不然基于等距的步长
    */
   void initialise(
       const Eigen::Vector3f& pos,
@@ -142,18 +144,20 @@ protected:
 
   unsigned int next_sample_index_;
   // to store sample params of each sample between init and generation
+  // 存储初始化和产生过程中样本的参数？
   std::vector<Eigen::Vector3f> sample_params_;
   base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
   Eigen::Vector3f vel_;
 
   // whether velocity of trajectory changes over time or not
+  // 局部轨迹的速度是否随着时间变化
   bool continued_acceleration_;
   bool discretize_by_time_;
 
   double sim_time_, sim_granularity_, angular_sim_granularity_;
   bool use_dwa_;
-  double sim_period_; // only for dwa
+  double sim_period_; // 该参数只针对DWA
 };
 
 } /* namespace base_local_planner */

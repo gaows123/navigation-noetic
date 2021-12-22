@@ -70,7 +70,7 @@ namespace base_local_planner{
 
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
-      
+
       max_vel_th_ = config.max_vel_theta;
       min_vel_th_ = config.min_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
@@ -111,7 +111,7 @@ namespace base_local_planner{
       heading_lookahead_ = config.heading_lookahead;
 
       holonomic_robot_ = config.holonomic_robot;
-      
+
       backup_vel_ = config.escape_vel;
 
       dwa_ = config.dwa;
@@ -136,7 +136,7 @@ namespace base_local_planner{
       }
 
       y_vels_ = y_vels;
-      
+
   }
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model,
@@ -531,7 +531,7 @@ namespace base_local_planner{
   }
 
   /*
-   * create the trajectories we wish to score
+   * 创建我们要打分的局部轨迹规划
    */
   Trajectory TrajectoryPlanner::createTrajectories(double x, double y, double theta,
       double vx, double vy, double vtheta,
@@ -545,7 +545,7 @@ namespace base_local_planner{
       max_vel_x = min( max_vel_x, final_goal_dist / sim_time_ );
     }
 
-    //should we use the dynamic window approach?
+    // 是否用动态窗口方法
     if (dwa_) {
       max_vel_x = max(min(max_vel_x, vx + acc_x * sim_period_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_period_);
@@ -561,7 +561,7 @@ namespace base_local_planner{
     }
 
 
-    //we want to sample the velocity space regularly
+    //we want to sample the velocity space regularly 对速度空间进行常规的采样
     double dvx = (max_vel_x - min_vel_x) / (vx_samples_ - 1);
     double dvtheta = (max_vel_theta - min_vel_theta) / (vtheta_samples_ - 1);
 
@@ -578,19 +578,19 @@ namespace base_local_planner{
 
     Trajectory* swap = NULL;
 
-    //any cell with a cost greater than the size of the map is impossible
+    //any cell with a cost greater than the size of the map is impossible 单元格不应该超过地图的大小
     double impossible_cost = path_map_.obstacleCosts();
 
-    //if we're performing an escape we won't allow moving forward
+    //if we're performing an escape we won't allow moving forward 如果机器人正在逃跑，前进不是允许的
     if (!escaping_) {
-      //loop through all x velocities
+      //loop through all x velocities 遍历所有的x 速度
       for(int i = 0; i < vx_samples_; ++i) {
         vtheta_samp = 0;
-        //first sample the straight trajectory
+        //first sample the straight trajectory 首先采样直的局部路径
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-        //if the new trajectory is better... let's take it
+        // 采用新的局部路径如果新的更好
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
           swap = best_traj;
           best_traj = comp_traj;
@@ -598,12 +598,12 @@ namespace base_local_planner{
         }
 
         vtheta_samp = min_vel_theta;
-        //next sample all theta trajectories
+        //next sample all theta trajectories 接下来采样所有的角速度局部路径
         for(int j = 0; j < vtheta_samples_ - 1; ++j){
           generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
               acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-          //if the new trajectory is better... let's take it
+          // 采用新的局部路径如果新的更好
           if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
             swap = best_traj;
             best_traj = comp_traj;
@@ -614,7 +614,7 @@ namespace base_local_planner{
         vx_samp += dvx;
       }
 
-      //only explore y velocities with holonomic robots
+      // 只对万向轮的机器人考虑y方向的速度
       if (holonomic_robot_) {
         //explore trajectories that move forward but also strafe slightly
         vx_samp = 0.1;
@@ -623,7 +623,7 @@ namespace base_local_planner{
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-        //if the new trajectory is better... let's take it
+        // 采用新的局部路径如果新的更好
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
           swap = best_traj;
           best_traj = comp_traj;
@@ -636,7 +636,7 @@ namespace base_local_planner{
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-        //if the new trajectory is better... let's take it
+        // 采用新的局部路径如果新的更好
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
           swap = best_traj;
           best_traj = comp_traj;
@@ -645,7 +645,7 @@ namespace base_local_planner{
       }
     } // end if not escaping
 
-    //next we want to generate trajectories for rotating in place
+    // 产生定点旋转的局部路径
     vtheta_samp = min_vel_theta;
     vx_samp = 0.0;
     vy_samp = 0.0;
@@ -663,18 +663,25 @@ namespace base_local_planner{
 
       //if the new trajectory is better... let's take it...
       //note if we can legally rotate in place we prefer to do that rather than move with y velocity
+      // 如果新的局部轨迹更好，采用新的
+      // 注意如果机器人可以定点旋转，则优先定点转而不是在y方向运动
       if(comp_traj->cost_ >= 0
           && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0)
           && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
+        // 获取新路径的终点（原地）
         double x_r, y_r, th_r;
         comp_traj->getEndpoint(x_r, y_r, th_r);
+         // 坐标计算
         x_r += heading_lookahead_ * cos(th_r);
         y_r += heading_lookahead_ * sin(th_r);
         unsigned int cell_x, cell_y;
 
         //make sure that we'll be looking at a legal cell
+        // 震荡抑制能够避免机器人在一个小范围内左右来回乱转。
+        // 转换到地图坐标系，判断与目标点的距离
         if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
           double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+          // 取距离最小的，放进best_traj
           if (ahead_gdist < heading_dist) {
             //if we haven't already tried rotating left since we've moved forward
             if (vtheta_samp < 0 && !stuck_left) {
@@ -693,14 +700,18 @@ namespace base_local_planner{
           }
         }
       }
-
+      //角速度遍历
       vtheta_samp += dvtheta;
     }
 
-    //do we have a legal trajectory
+    // 检查最优轨迹的分数是否大于0
     if (best_traj->cost_ >= 0) {
       // avoid oscillations of in place rotation and in place strafing
+      //抑制震荡影响：当机器人在某方向移动时，对下一个周期的与其相反方向标记为无效
+      //直到机器人从标记震荡的位置处离开一定距离，返回最佳轨迹
+      //若轨迹的采样速度>0
       if ( ! (best_traj->xv_ > 0)) {
+        //若轨迹的角速度<0
         if (best_traj->thetav_ < 0) {
           if (rotating_right) {
             stuck_right = true;
@@ -795,7 +806,7 @@ namespace base_local_planner{
       }
     }
 
-    //do we have a legal trajectory
+    // 是否找到了有效的局部路径
     if (best_traj->cost_ >= 0) {
       if (!(best_traj->xv_ > 0)) {
         if (best_traj->thetav_ < 0) {
@@ -896,6 +907,7 @@ namespace base_local_planner{
 
 
     //if the trajectory failed because the footprint hits something, we're still going to back up
+    // 如果局部路径因为它的footprint撞到了障碍物而失败，也需要做一定的处理
     if(best_traj->cost_ == -1.0)
       best_traj->cost_ = 1.0;
 
@@ -903,18 +915,18 @@ namespace base_local_planner{
 
   }
 
-  //given the current state of the robot, find a good trajectory
+  // 根据机器人当前的状态来计算找到较优的局部轨迹
   Trajectory TrajectoryPlanner::findBestPath(const geometry_msgs::PoseStamped& global_pose,
       geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities) {
 
     Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
     Eigen::Vector3f vel(global_vel.pose.position.x, global_vel.pose.position.y, tf2::getYaw(global_vel.pose.orientation));
 
-    //reset the map for new operations
+    // 重置地图
     path_map_.resetPathDist();
     goal_map_.resetPathDist();
 
-    //temporarily remove obstacles that are within the footprint of the robot
+    // 临时地删去机器人的footprint中的障碍物
     std::vector<base_local_planner::Position2DInt> footprint_list =
         footprint_helper_.getFootprintCells(
             pos,
@@ -922,17 +934,19 @@ namespace base_local_planner{
             costmap_,
             true);
 
-    //mark cells within the initial footprint of the robot
+    // 标记机器人的初始footprint内的单元格
     for (unsigned int i = 0; i < footprint_list.size(); ++i) {
       path_map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
     }
 
     //make sure that we update our path based on the global plan and compute costs
+    // 确保根据全局路径来更新机器人的路径和计算代价
     path_map_.setTargetCells(costmap_, global_plan_);
     goal_map_.setLocalGoal(costmap_, global_plan_);
     ROS_DEBUG("Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
+    // 滚动计算局部轨迹并且找到代价最小的一个
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
         vel[0], vel[1], vel[2],
         acc_lim_x_, acc_lim_y_, acc_lim_theta_);
@@ -984,9 +998,9 @@ namespace base_local_planner{
     return best;
   }
 
-  //we need to take the footprint of the robot into account when we calculate cost to obstacles
+  // 当计算障碍物的代价时，机器人的footprint需要被考虑进去
   double TrajectoryPlanner::footprintCost(double x_i, double y_i, double theta_i){
-    //check if the footprint is legal
+    // 检测机器人的footprint是否有效合法
     return world_model_.footprintCost(x_i, y_i, theta_i, footprint_spec_, inscribed_radius_, circumscribed_radius_);
   }
 

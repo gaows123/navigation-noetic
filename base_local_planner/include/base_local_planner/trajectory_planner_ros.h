@@ -78,57 +78,53 @@ namespace base_local_planner {
   class TrajectoryPlannerROS : public nav_core::BaseLocalPlanner {
     public:
       /**
-       * @brief  Default constructor for the ros wrapper
+       * @brief  默认构造函数
        */
       TrajectoryPlannerROS();
 
       /**
-       * @brief  Constructs the ros wrapper
-       * @param name The name to give this instance of the trajectory planner
-       * @param tf A pointer to a transform listener
-       * @param costmap The cost map to use for assigning costs to trajectories
+       * @brief   构造ros封装类
+       * @param name 局部轨迹规划器的名字
+       * @param tf  transform listener的指针
+       * @param costmap 代价地图
        */
       TrajectoryPlannerROS(std::string name,
                            tf2_ros::Buffer* tf,
                            costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Constructs the ros wrapper
-       * @param name The name to give this instance of the trajectory planner
-       * @param tf A pointer to a transform listener
-       * @param costmap The cost map to use for assigning costs to trajectories
+       * @brief   构造ros封装类
+       * @param name 局部轨迹规划器的名字
+       * @param tf  transform listener的指针
+       * @param costmap 代价地图
        */
       void initialize(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Destructor for the wrapper
+       * @brief  封装类的析构函数
        */
       ~TrajectoryPlannerROS();
-      
+
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @brief  根据当前机器人坐标，朝向和速度，计算下个下发速度
+       * @param cmd_vel 存储者下发速度
+       * @return True意味着找到有效轨迹
        */
       bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
 
       /**
-       * @brief  Set the plan that the controller is following
-       * @param orig_global_plan The plan to pass to the controller
-       * @return True if the plan was updated successfully, false otherwise
+       * @brief 更新局部规划器要跟随的路径
+       * @param orig_global_plan 更新的路径
+       * @return True 表示更新成功
        */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
-      /**
-       * @brief  Check if the goal pose has been achieved
-       * @return True if achieved, false otherwise
-       */
+      // 判断是否到达目标点
       bool isGoalReached();
 
       /**
-       * @brief  Generate and score a single trajectory
+       * @brief  计算轨迹并且为其打分
        * @param vx_samp The x velocity used to seed the trajectory
        * @param vy_samp The y velocity used to seed the trajectory
        * @param vtheta_samp The theta velocity used to seed the trajectory
@@ -141,7 +137,7 @@ namespace base_local_planner {
       bool checkTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
 
       /**
-       * @brief  Generate and score a single trajectory
+       * @brief  产生和打分单个局部轨迹
        * @param vx_samp The x velocity used to seed the trajectory
        * @param vy_samp The y velocity used to seed the trajectory
        * @param vtheta_samp The theta velocity used to seed the trajectory
@@ -157,31 +153,31 @@ namespace base_local_planner {
         return initialized_;
       }
 
-      /** @brief Return the inner TrajectoryPlanner object.  Only valid after initialize(). */
+      /** @brief 返回内部的TrajectoryPlanner对象，只有在initialize()后才有效 */
       TrajectoryPlanner* getPlanner() const { return tc_; }
 
     private:
       /**
-       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
+       * @brief  用于更新局部规划器参数的回调函数
        */
       void reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level);
 
       /**
-       * @brief Once a goal position is reached... rotate to the goal orientation
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  goal_th The desired th value for the goal
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
+       * @brief 一旦到了目标点位置上，开始旋转对齐
+       * @param  global_pose 机器人在全局坐标系下的位姿
+       * @param  robot_vel 机器人速度
+       * @param  goal_th 期望的th 速度
+       * @param  cmd_vel 速度命令的载体
+       * @return  True 代表找到有效的局部路径规划
        */
       bool rotateToGoal(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel);
 
       /**
-       * @brief Stop the robot taking into account acceleration limits
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
+       * @brief  基于加速度限制让机器人停止
+       * @param  global_pose 机器人在全局坐标系下的位姿
+       * @param  robot_vel 机器人速度
+       * @param  cmd_vel 速度命令的载体
+       * @return   True 代表找到有效的局部路径规划
        */
       bool stopWithAccLimits(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, geometry_msgs::Twist& cmd_vel);
 
@@ -191,17 +187,26 @@ namespace base_local_planner {
         return x < 0.0 ? -1.0 : 1.0;
       }
 
-      WorldModel* world_model_; ///< @brief The world model that the controller will use
-      TrajectoryPlanner* tc_; ///< @brief The trajectory controller
+      WorldModel* world_model_; // 局部规划器用到的世界模型
+      TrajectoryPlanner* tc_; ///< @brief 轨迹局部规划器，tc是 trajectory controller的缩写
 
-      costmap_2d::Costmap2DROS* costmap_ros_; ///< @brief The ROS wrapper for the costmap the controller will use
-      costmap_2d::Costmap2D* costmap_; ///< @brief The costmap the controller will use
-      MapGridVisualizer map_viz_; ///< @brief The map grid visualizer for outputting the potential field generated by the cost function
-      tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
-      std::string global_frame_; ///< @brief The frame in which the controller will run
-      double max_sensor_range_; ///< @brief Keep track of the effective maximum range of our sensors
-      nav_msgs::Odometry base_odom_; ///< @brief Used to get the velocity of the robot
-      std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
+      // 局部规划器使用的关于代价地图的ROS封装类
+      costmap_2d::Costmap2DROS* costmap_ros_;
+      // 局部规划器用到的代价地图
+      costmap_2d::Costmap2D* costmap_;
+
+      // 地图网格可视化代价地图产生的势场
+      MapGridVisualizer map_viz_;
+      // 用于点云转换
+      tf2_ros::Buffer* tf_;
+      // 全局坐标系
+      std::string global_frame_;
+      // 传感器的有效感知距离
+      double max_sensor_range_;
+      // 用于得到机器人的速度
+      nav_msgs::Odometry base_odom_;
+      // 机器人的基坐标系
+      std::string robot_base_frame_;
       double rot_stopped_velocity_, trans_stopped_velocity_;
       double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;

@@ -50,47 +50,47 @@ namespace base_local_planner {
   class CostmapModel : public WorldModel {
     public:
       /**
-       * @brief  Constructor for the CostmapModel
-       * @param costmap The costmap that should be used
+       * @brief  构造代价地图模型
+       * @param costmap 用到的代价函数
        * @return
        */
       CostmapModel(const costmap_2d::Costmap2D& costmap);
 
       /**
-       * @brief  Destructor for the world model
+       * @brief  世界模型的析构函数
        */
       virtual ~CostmapModel(){}
       using WorldModel::footprintCost;
 
       /**
-       * @brief  Checks if any obstacles in the costmap lie inside a convex footprint that is rasterized into the grid
-       * @param  position The position of the robot in world coordinates
-       * @param  footprint The specification of the footprint of the robot in world coordinates
-       * @param  inscribed_radius The radius of the inscribed circle of the robot
-       * @param  circumscribed_radius The radius of the circumscribed circle of the robot
-       * @return Positive if all the points lie outside the footprint, negative otherwise:
-       *            -1 if footprint covers at least a lethal obstacle cell, or
-       *            -2 if footprint covers at least a no-information cell, or
-       *            -3 if footprint is [partially] outside of the map
+       * @brief  检查是否有障碍物落到凸footprint里面，其中footprint已经被栅格化成网格
+       * @param  position 机器人位置
+       * @param  footprint  机器人的footprint
+       * @param  inscribed_radius  机器人的内切圆半径
+       * @param  circumscribed_radius  机器人的外接圆半径
+       * @return 返回正数如果所有的点都在footprint外部，负数则分别代表:
+       *            -1 代表 footprint 碰到至少一个致命的障碍物单元格(lethal obstacle cell)
+       *            -2  代表 footprint 碰到至少一个无信息单元格 (no-information cell)
+       *            -3 代表 footprint 有一部分在地图外面
        */
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius);
 
       /**
-       * @brief  Rasterizes a line in the costmap grid and checks for collisions
-       * @param x0 The x position of the first cell in grid coordinates
-       * @param y0 The y position of the first cell in grid coordinates
-       * @param x1 The x position of the second cell in grid coordinates
-       * @param y1 The y position of the second cell in grid coordinates
-       * @return A positive cost for a legal line... negative otherwise
+       * @brief   栅格化一条线段到代价地图网格并且进行碰撞检测
+       * @param x0  网格坐标系中第一个单元格的x坐标
+       * @param y0  网格坐标系中第一个单元格的y坐标
+       * @param x1  网格坐标系中第二个单元格的x坐标
+       * @param y1  网格坐标系中第二个单元格的y坐标
+       * @return  对于合法的线段返回正值的代价
        */
       double lineCost(int x0, int x1, int y0, int y1) const;
 
       /**
-       * @brief  Checks the cost of a point in the costmap
-       * @param x The x position of the point in cell coordinates
-       * @param y The y position of the point in cell coordinates
-       * @return A positive cost for a legal point... negative otherwise
+       * @brief  检查某个点在代价地图中的代价
+       * @param x 点在单元格坐标系中的x坐标
+       * @param y  点在单元格坐标系中的y坐标
+       * @return 对于合法的线段返回正值的代价
        */
       double pointCost(int x, int y) const;
 

@@ -60,7 +60,7 @@ public:
   virtual bool prepare() = 0;
 
   /**
-   * return a score for trajectory traj
+   *  返回一个局部轨迹的评分
    */
   virtual double scoreTrajectory(Trajectory &traj) = 0;
 

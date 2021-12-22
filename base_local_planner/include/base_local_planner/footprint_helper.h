@@ -53,12 +53,12 @@ public:
   virtual ~FootprintHelper();
 
   /**
-   * @brief  Used to get the cells that make up the footprint of the robot
-   * @param x_i The x position of the robot
-   * @param y_i The y position of the robot
-   * @param theta_i The orientation of the robot
-   * @param  fill If true: returns all cells in the footprint of the robot. If false: returns only the cells that make up the outline of the footprint.
-   * @return The cells that make up either the outline or entire footprint of the robot depending on fill
+   * @brief  获得组成机器人footprint的单元格
+   * @param x_i 机器人的x坐标
+   * @param y_i  机器人的y坐标
+   * @param theta_i 机器人的朝向
+   * @param  fill 如果为 true: 返回机器人footprint的所有单元格. 如果false: 只返回组成机器人轮廓的单元格.
+   * @return 返回组成机器人footprint的所有单元格/轮廓的单元格
    */
   std::vector<base_local_planner::Position2DInt> getFootprintCells(
       Eigen::Vector3f pos,
@@ -67,11 +67,11 @@ public:
       bool fill);
 
   /**
-   * @brief  Use Bresenham's algorithm to trace a line between two points in a grid
-   * @param  x0 The x coordinate of the first point
-   * @param  x1 The x coordinate of the second point
-   * @param  y0 The y coordinate of the first point
-   * @param  y1 The y coordinate of the second point
+   * @brief  Bresenham's 算法追踪网格中连接两点的线
+   * @param  x0  第一个点的x坐标
+   * @param  x1  第二个点的x坐标
+   * @param  y0  第一个点的y坐标
+   * @param  y1  第二个点的y坐标
    * @param  pts Will be filled with the cells that lie on the line in the grid
    */
   void getLineCells(int x0, int x1, int y0, int y1, std::vector<base_local_planner::Position2DInt>& pts);
