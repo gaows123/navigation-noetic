@@ -64,20 +64,20 @@ namespace base_local_planner {
       double time_delta_; ///< @brief The time gap between points
 
       /**
-       * @brief  Get a point within the trajectory
-       * @param index The index of the point to get
-       * @param x Will be set to the x position of the point
-       * @param y Will be set to the y position of the point
-       * @param th Will be set to the theta position of the point
+       * @brief  Get a point within the trajectory 获取局部轨迹某个点的信息
+       * @param index The index of the point to get 获取点的id
+       * @param x Will be set to the x position of the point x坐标
+       * @param y Will be set to the y position of the point 坐标
+       * @param th Will be set to the theta position of the point 该点朝向
        */
       void getPoint(unsigned int index, double& x, double& y, double& th) const;
 
       /**
-       * @brief  Set a point within the trajectory
-       * @param index The index of the point to set
-       * @param x The x position
-       * @param y The y position
-       * @param th The theta position
+       * @brief  Set a point within the trajectory 设置局部轨迹的某个点
+       * @param index The index of the point to set 被设置点的id
+       * @param x The x position  x 坐标
+       * @param y The y position y 坐标
+       * @param th The theta position 朝向
        */
       void setPoint(unsigned int index, double x, double y, double th);
 

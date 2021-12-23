@@ -61,58 +61,58 @@
 namespace base_local_planner {
   /**
    * @class TrajectoryPlanner
-   * @brief Computes control velocities for a robot given a costmap, a plan, and the robot's position in the world. 
+   * @brief  该类从给定的代价地图，路径和机器人位置计算下发速度
    */
   class TrajectoryPlanner{
-    friend class TrajectoryPlannerTest; //Need this for gtest to work
+    friend class TrajectoryPlannerTest; // 用于gtest测试
     public:
       /**
-       * @brief  Constructs a trajectory controller
-       * @param world_model The WorldModel the trajectory controller uses to check for collisions 
-       * @param costmap A reference to the Costmap the controller should use
-       * @param footprint_spec A polygon representing the footprint of the robot. (Must be convex)
-       * @param inscribed_radius The radius of the inscribed circle of the robot
-       * @param circumscribed_radius The radius of the circumscribed circle of the robot
-       * @param acc_lim_x The acceleration limit of the robot in the x direction
-       * @param acc_lim_y The acceleration limit of the robot in the y direction
-       * @param acc_lim_theta The acceleration limit of the robot in the theta direction
-       * @param sim_time The number of seconds to "roll-out" each trajectory
-       * @param sim_granularity The distance between simulation points should be small enough that the robot doesn't hit things
-       * @param vx_samples The number of trajectories to sample in the x dimension
-       * @param vtheta_samples The number of trajectories to sample in the theta dimension
-       * @param path_distance_bias A scaling factor for how close the robot should stay to the path
-       * @param goal_distance_bias A scaling factor for how aggresively the robot should pursue a local goal
-       * @param occdist_scale A scaling factor for how much the robot should prefer to stay away from obstacles
-       * @param heading_lookahead How far the robot should look ahead of itself when differentiating between different rotational velocities
+       * @brief 构造路径规划器
+       * @param world_model  路径规划器用来碰撞检测的世界模型
+       * @param costmap 局部规划器用到的代价地图的引用
+       * @param footprint_spec  代表机器人的多边形(必须是凸的)
+       * @param inscribed_radius  机器人内切圆的半径
+       * @param circumscribed_radius  机器人外接圆的半径
+       * @param acc_lim_x 机器人在x方向上的加速度限制
+       * @param acc_lim_y 机器人在y方向上的加速度限制
+       * @param acc_lim_theta  角速度限制
+       * @param sim_time The number of seconds to "roll-out" each trajectory "roll-out"每个局部路径的秒数
+       * @param sim_granularity 仿真点之间的距离应该足够的小而不会撞到障碍物
+       * @param vx_samples  在x方向采样的局部路径数量？
+       * @param vtheta_samples  在旋转方向采样的局部路径数量
+       * @param path_distance_bias 调节机器人应该离全局路径多近的尺度因子
+       * @param goal_distance_bias 调节机器人应该多'积极'地导航去目标点的尺度因子
+       * @param occdist_scale  调节机器人离障碍物距离尺度因子
+       * @param heading_lookahead How far the robot should look ahead of itself when differentiating between different rotational velocities？
        * @param oscillation_reset_dist The distance the robot must travel before it can explore rotational velocities that were unsuccessful in the past
-       * @param escape_reset_dist The distance the robot must travel before it can exit escape mode
-       * @param escape_reset_theta The distance the robot must rotate before it can exit escape mode
-       * @param holonomic_robot Set this to true if the robot being controlled can take y velocities and false otherwise
-       * @param max_vel_x The maximum x velocity the controller will explore
-       * @param min_vel_x The minimum x velocity the controller will explore
-       * @param max_vel_th The maximum rotational velocity the controller will explore
-       * @param min_vel_th The minimum rotational velocity the controller will explore
-       * @param min_in_place_vel_th The absolute value of the minimum in-place rotational velocity the controller will explore
-       * @param backup_vel The velocity to use while backing up
-       * @param dwa Set this to true to use the Dynamic Window Approach, false to use acceleration limits
-       * @param heading_scoring Set this to true to score trajectories based on the robot's heading after 1 timestep
-       * @param heading_scoring_timestep How far to look ahead in time when we score heading based trajectories
-       * @param meter_scoring adapt parameters to costmap resolution
-       * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
-       * @param y_vels A vector of the y velocities the controller will explore
-       * @param angular_sim_granularity The distance between simulation points for angular velocity should be small enough that the robot doesn't hit things
+       * @param escape_reset_dist 退出逃跑模式之前机器人要走过的距离长度
+       * @param escape_reset_theta 退出逃跑模式之前机器人要旋转的角度阈值
+       * @param holonomic_robot 如果为true, 机器人也会被y方向的线速度控制
+       * @param max_vel_x 最大线速度
+       * @param min_vel_x 最小线速度
+       * @param max_vel_th 最大角速度
+       * @param min_vel_th 最小角速度
+       * @param min_in_place_vel_th 最小定点旋转角速度 The absolute value of the minimum in-place rotational velocity the controller will explore
+       * @param backup_vel 后退速度？ The velocity to use while backing up
+       * @param dwa 如果为true, 将用动态窗口法DWA
+       * @param heading_scoring  true表示轨迹打分项会包括机器人朝向
+       * @param heading_scoring_timestep 从多远开始为局部轨迹的朝向打分
+       * @param meter_scoring 调节参数和代价地图的分辨率适配
+       * @param simple_attractor true允许 to allow simple attraction to a goal point instead of intelligent cost propagation
+       * @param y_vels y方向线速度的向量
+       * @param angular_sim_granularity 仿真点之间的距离应该足够的小而不会撞到障碍物？
        */
-      TrajectoryPlanner(WorldModel& world_model, 
-          const costmap_2d::Costmap2D& costmap, 
+      TrajectoryPlanner(WorldModel& world_model,
+          const costmap_2d::Costmap2D& costmap,
           std::vector<geometry_msgs::Point> footprint_spec,
           double acc_lim_x = 1.0, double acc_lim_y = 1.0, double acc_lim_theta = 1.0,
-          double sim_time = 1.0, double sim_granularity = 0.025, 
+          double sim_time = 1.0, double sim_granularity = 0.025,
           int vx_samples = 20, int vtheta_samples = 20,
           double path_distance_bias = 0.6, double goal_distance_bias = 0.8, double occdist_scale = 0.2,
-          double heading_lookahead = 0.325, double oscillation_reset_dist = 0.05, 
+          double heading_lookahead = 0.325, double oscillation_reset_dist = 0.05,
           double escape_reset_dist = 0.10, double escape_reset_theta = M_PI_2,
           bool holonomic_robot = true,
-          double max_vel_x = 0.5, double min_vel_x = 0.1, 
+          double max_vel_x = 0.5, double min_vel_x = 0.1,
           double max_vel_th = 1.0, double min_vel_th = -1.0, double min_in_place_vel_th = 0.4,
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
@@ -133,49 +133,44 @@ namespace base_local_planner {
       void reconfigure(BaseLocalPlannerConfig &cfg);
 
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot, return a trajectory to follow
-       * @param global_pose The current pose of the robot in world space 
-       * @param global_vel The current velocity of the robot in world space
-       * @param drive_velocities Will be set to velocities to send to the robot base
-       * @return The selected path or trajectory
+       * @brief  找到要跟随的路径
+       * @param global_pose 全局位姿
+       * @param global_vel 全局坐标系中的速度
+       * @param drive_velocities 下发速度
+       * @return 选择的路径
        */
       Trajectory findBestPath(const geometry_msgs::PoseStamped& global_pose,
                               geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities);
 
       /**
-       * @brief  Update the plan that the controller is following
-       * @param new_plan A new plan for the controller to follow 
-       * @param compute_dists Wheter or not to compute path/goal distances when a plan is updated
+       * @brief  更新路径
+       * @param new_plan 要跟随的新路径
+       * @param compute_dists 是否计算路径的长度
        */
       void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false);
 
-      /**
-       * @brief  Accessor for the goal the robot is currently pursuing in world corrdinates
-       * @param x Will be set to the x position of the local goal 
-       * @param y Will be set to the y position of the local goal 
-       */
       void getLocalGoal(double& x, double& y);
 
       /**
-       * @brief  Generate and score a single trajectory
-       * @param x The x position of the robot  
-       * @param y The y position of the robot  
-       * @param theta The orientation of the robot
-       * @param vx The x velocity of the robot
-       * @param vy The y velocity of the robot
-       * @param vtheta The theta velocity of the robot
+       * @brief  产生和打分单个局部路径
+       * @param x 当前坐标x轴
+       * @param y 当前坐标y轴
+       * @param theta 当前朝向
+       * @param vx 当前机器人x方向速度
+       * @param vy 当前机器人y方向速度
+       * @param vtheta 当前机器人角速度
        * @param vx_samp The x velocity used to seed the trajectory
        * @param vy_samp The y velocity used to seed the trajectory
        * @param vtheta_samp The theta velocity used to seed the trajectory
        * @return True if the trajectory is legal, false otherwise
        */
-      bool checkTrajectory(double x, double y, double theta, double vx, double vy, 
+      bool checkTrajectory(double x, double y, double theta, double vx, double vy,
           double vtheta, double vx_samp, double vy_samp, double vtheta_samp);
 
       /**
        * @brief  Generate and score a single trajectory
-       * @param x The x position of the robot  
-       * @param y The y position of the robot  
+       * @param x The x position of the robot
+       * @param y The y position of the robot
        * @param theta The orientation of the robot
        * @param vx The x velocity of the robot
        * @param vy The y velocity of the robot
@@ -185,7 +180,7 @@ namespace base_local_planner {
        * @param vtheta_samp The theta velocity used to seed the trajectory
        * @return The score (as double)
        */
-      double scoreTrajectory(double x, double y, double theta, double vx, double vy, 
+      double scoreTrajectory(double x, double y, double theta, double vx, double vy,
           double vtheta, double vx_samp, double vy_samp, double vtheta_samp);
 
       /**
@@ -210,8 +205,8 @@ namespace base_local_planner {
     private:
       /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
-       * @param x The x position of the robot  
-       * @param y The y position of the robot  
+       * @param x The x position of the robot
+       * @param y The y position of the robot
        * @param theta The orientation of the robot
        * @param vx The x velocity of the robot
        * @param vy The y velocity of the robot
@@ -219,15 +214,15 @@ namespace base_local_planner {
        * @param acc_x The x acceleration limit of the robot
        * @param acc_y The y acceleration limit of the robot
        * @param acc_theta The theta acceleration limit of the robot
-       * @return 
+       * @return
        */
-      Trajectory createTrajectories(double x, double y, double theta, double vx, double vy, double vtheta, 
+      Trajectory createTrajectories(double x, double y, double theta, double vx, double vy, double vtheta,
           double acc_x, double acc_y, double acc_theta);
 
       /**
        * @brief  Generate and score a single trajectory
-       * @param x The x position of the robot  
-       * @param y The y position of the robot  
+       * @param x The x position of the robot
+       * @param y The y position of the robot
        * @param theta The orientation of the robot
        * @param vx The x velocity of the robot
        * @param vy The y velocity of the robot
@@ -239,23 +234,23 @@ namespace base_local_planner {
        * @param acc_y The y acceleration limit of the robot
        * @param acc_theta The theta acceleration limit of the robot
        * @param impossible_cost The cost value of a cell in the local map grid that is considered impassable
-       * @param traj Will be set to the generated trajectory with its associated score 
+       * @param traj Will be set to the generated trajectory with its associated score
        */
-      void generateTrajectory(double x, double y, double theta, double vx, double vy, 
+      void generateTrajectory(double x, double y, double theta, double vx, double vy,
           double vtheta, double vx_samp, double vy_samp, double vtheta_samp, double acc_x, double acc_y,
           double acc_theta, double impossible_cost, Trajectory& traj);
 
       /**
        * @brief  Checks the legality of the robot footprint at a position and orientation using the world model
-       * @param x_i The x position of the robot 
-       * @param y_i The y position of the robot 
+       * @param x_i The x position of the robot
+       * @param y_i The y position of the robot
        * @param theta_i The orientation of the robot
-       * @return 
+       * @return
        */
       double footprintCost(double x_i, double y_i, double theta_i);
 
       base_local_planner::FootprintHelper footprint_helper_;
-    
+
       MapGrid path_map_; ///< @brief The local map grid where we propagate path distance
       MapGrid goal_map_; ///< @brief The local map grid where we propagate goal distance
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
@@ -297,8 +292,8 @@ namespace base_local_planner {
       double heading_lookahead_; ///< @brief How far the robot should look ahead of itself when differentiating between different rotational velocities
       double oscillation_reset_dist_; ///< @brief The distance the robot must travel before it can explore rotational velocities that were unsuccessful in the past
       double escape_reset_dist_, escape_reset_theta_; ///< @brief The distance the robot must travel before it can leave escape mode
-      bool holonomic_robot_; ///< @brief Is the robot holonomic or not? 
-      
+      bool holonomic_robot_; ///< @brief Is the robot holonomic or not?
+
       double max_vel_x_, min_vel_x_, max_vel_th_, min_vel_th_, min_in_place_vel_th_; ///< @brief Velocity limits for the controller
 
       double backup_vel_; ///< @brief The velocity to use while backing up
@@ -324,7 +319,7 @@ namespace base_local_planner {
        * @param  vy The current y velocity
        * @param  theta The current orientation
        * @param  dt The timestep to take
-       * @return The new x position 
+       * @return The new x position
        */
       inline double computeNewXPosition(double xi, double vx, double vy, double theta, double dt){
         return xi + (vx * cos(theta) + vy * cos(M_PI_2 + theta)) * dt;
@@ -337,7 +332,7 @@ namespace base_local_planner {
        * @param  vy The current y velocity
        * @param  theta The current orientation
        * @param  dt The timestep to take
-       * @return The new y position 
+       * @return The new y position
        */
       inline double computeNewYPosition(double yi, double vx, double vy, double theta, double dt){
         return yi + (vx * sin(theta) + vy * sin(M_PI_2 + theta)) * dt;
@@ -357,7 +352,7 @@ namespace base_local_planner {
       //compute velocity based on acceleration
       /**
        * @brief  Compute velocity based on acceleration
-       * @param vg The desired velocity, what we're accelerating up to 
+       * @param vg The desired velocity, what we're accelerating up to
        * @param vi The current velocity
        * @param a_max An acceleration limit
        * @param  dt The timestep to take

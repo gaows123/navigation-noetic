@@ -125,10 +125,10 @@ namespace base_local_planner {
 
       /**
        * @brief  计算轨迹并且为其打分
-       * @param vx_samp The x velocity used to seed the trajectory
-       * @param vy_samp The y velocity used to seed the trajectory
-       * @param vtheta_samp The theta velocity used to seed the trajectory
-       * @param update_map Whether or not to update the map for the planner
+       * @param vx_samp 用于推算出路径的x方向速度
+       * @param vy_samp 用于推算出路径的y方向速度
+       * @param vtheta_samp 用于推算出路径的角速度
+       * @param update_map 是否更新地图
        * when computing the legality of the trajectory, this is useful to set
        * to false if you're going to be doing a lot of trajectory checking over
        * a short period of time
@@ -138,10 +138,10 @@ namespace base_local_planner {
 
       /**
        * @brief  产生和打分单个局部轨迹
-       * @param vx_samp The x velocity used to seed the trajectory
-       * @param vy_samp The y velocity used to seed the trajectory
-       * @param vtheta_samp The theta velocity used to seed the trajectory
-       * @param update_map Whether or not to update the map for the planner
+       * @param vx_samp 用于推算出路径的x方向速度
+       * @param vy_samp 用于推算出路径的y方向速度
+       * @param vtheta_samp 用于推算出路径的角速度
+       * @param update_map 是否更新地图
        * when computing the legality of the trajectory, this is useful to set
        * to false if you're going to be doing a lot of trajectory checking over
        * a short period of time

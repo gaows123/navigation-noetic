@@ -54,13 +54,13 @@ public:
 
   /**
    *
-   * General updating of context values if required.
-   * Subclasses may overwrite. Return false in case there is any error.
+   * 更新常用的变量
+   * 毕竟纯虚函数，子类中必须重写该函数
    */
   virtual bool prepare() = 0;
 
   /**
-   *  返回一个局部轨迹的评分
+   *  返回一个局部轨迹的评分，也是纯虚函数
    */
   virtual double scoreTrajectory(Trajectory &traj) = 0;
 

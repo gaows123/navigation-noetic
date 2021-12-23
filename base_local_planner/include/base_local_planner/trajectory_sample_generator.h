@@ -50,17 +50,17 @@ class TrajectorySampleGenerator {
 public:
 
   /**
-   * Whether this generator can create more trajectories
+   * 这个产生器是否可以生成多个路径
    */
   virtual bool hasMoreTrajectories() = 0;
 
   /**
-   * Whether this generator can create more trajectories
+   * 这个产生器是否可以生产多个路径
    */
   virtual bool nextTrajectory(Trajectory &traj) = 0;
 
   /**
-   * @brief  Virtual destructor for the interface
+   * @brief  接口的虚析构函数
    */
   virtual ~TrajectorySampleGenerator() {}
 

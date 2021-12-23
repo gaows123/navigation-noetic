@@ -48,12 +48,9 @@ namespace base_local_planner {
 
 /**
  * @class SimpleScoredSamplingPlanner
- * @brief Generates a local plan using the given generator and cost functions.
- * Assumes less cost are best, and negative costs indicate infinite costs
+ * @brief 根据给定的产生器和代价函数计算一个局部轨迹.这里假设代价越小越好同时负值的代价意味着无穷大
  *
- * This is supposed to be a simple and robust implementation of
- * the TrajectorySearch interface. More efficient search may well be
- * possible using search heuristics, parallel search, etc.
+ * TrajectorySearch接口的简单和鲁棒的实现，如果想用更有效率的搜索，可以考虑search heuristics, parallel search
  */
 class SimpleScoredSamplingPlanner : public base_local_planner::TrajectorySearch {
 public:
@@ -63,6 +60,11 @@ public:
   SimpleScoredSamplingPlanner() {}
 
   /**
+   * 处理一系列的产生器和评分器。评分器返回代价大于0，如果小于0意味着无效路径
+   * 产生器不是之前的那个，是fallback产生器，只有在先前的产生器没有找到有效路径时，他们才去计算
+   * 将会用到每个产生器直到不在返回局部路径或者计数满足了要求
+   * 然后重置计数并且尝试列表中的下一个
+   * 如果max_samples = -1 (默认值)：每一个采样规划器会持续的调用产生器直到产生器遍历了所有的样本
    * Takes a list of generators and critics. Critics return costs > 0, or negative costs for invalid trajectories.
    * Generators other than the first are fallback generators,  meaning they only get to generate if the previous
    * generator did not find a valid trajectory.
