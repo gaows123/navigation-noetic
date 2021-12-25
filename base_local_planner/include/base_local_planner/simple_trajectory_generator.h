@@ -71,7 +71,7 @@ public:
    * @param pos 当前位置
    * @param vel 当前速度
    * @param limits 速度限制
-   * @param vsamples: in how many samples to divide the given dimension 分成多少哥样本
+   * @param vsamples: in how many samples to divide the given dimension 采样速度，分成多少哥样本
    * @param use_acceleration_limits: true时，用客观物理模型, 不然用理想的机器人模型
    * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from. 用来产生局部轨迹的附加的速度样本(不怎么用到)
    * @param discretize_by_time 如果为true,  路径基于相同时间步长端被分段，不然基于等距的步长

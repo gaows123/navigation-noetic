@@ -108,13 +108,12 @@ namespace dwa_local_planner {
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
 
-      // make sure to update the costmap we'll use for this cycle
+      // 更新局部规划器的代价地图
       costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
 
       planner_util_.initialize(tf, costmap, costmap_ros_->getGlobalFrameID());
 
-      //create the actual planner that we'll use.. it'll configure itself from the parameter server
-      // 指向DWAPlanner类的shared_ptr
+      // 创建局部路径规划器，参数服务器会自动的配置默认参数， dp_是指向DWAPlanner类的shared_ptr
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
 
       if( private_nh.getParam( "odom_topic", odom_topic_ ))
@@ -124,7 +123,7 @@ namespace dwa_local_planner {
 
       initialized_ = true;
 
-      // Warn about deprecated parameters -- remove this block in N-turtle
+      // 这些参数在以后的版本可能会被移除
       nav_core::warnRenamedParameter(private_nh, "max_vel_trans", "max_trans_vel");
       nav_core::warnRenamedParameter(private_nh, "min_vel_trans", "min_trans_vel");
       nav_core::warnRenamedParameter(private_nh, "max_vel_theta", "max_rot_vel");
@@ -146,7 +145,7 @@ namespace dwa_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+    // 更新了新的全局路径后，清除latch
     latchedStopRotateController_.resetLatching();
 
     ROS_INFO("Got new plan");
@@ -181,7 +180,7 @@ namespace dwa_local_planner {
   }
 
   DWAPlannerROS::~DWAPlannerROS(){
-    //make sure to clean things up
+    // 之前new的,在析构函数中要被delele
     delete dsrv_;
   }
 
@@ -204,7 +203,7 @@ namespace dwa_local_planner {
     gettimeofday(&start, NULL);
     */
 
-    //compute what trajectory to drive along
+    // 计算要跟随的局部路径
     geometry_msgs::PoseStamped drive_cmds;
     drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();
 
@@ -213,7 +212,7 @@ namespace dwa_local_planner {
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
-    /* For timing uncomment
+    /* For timing uncomment 如果想看看计算时间，把这里注释关掉
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
     end_t = end.tv_sec + double(end.tv_usec) / 1e6;
@@ -221,7 +220,7 @@ namespace dwa_local_planner {
     ROS_INFO("Cycle time: %.9f", t_diff);
     */
 
-    // 传递运动速度
+    // ?传递运动速度
     cmd_vel.linear.x = drive_cmds.pose.position.x;
     cmd_vel.linear.y = drive_cmds.pose.position.y;
     cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);

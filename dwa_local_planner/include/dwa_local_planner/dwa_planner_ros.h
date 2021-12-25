@@ -71,45 +71,43 @@ namespace dwa_local_planner {
 
       /**
        * @brief  构建ros的封装
-       * @param name The name to give this instance of the trajectory planner
-       * @param tf A pointer to a transform listener
-       * @param costmap The cost map to use for assigning costs to trajectories
+       * @param name 局部规划器名字
+       * @param tf transform listener 的指针
+       * @param costmap 代价地图
        */
       void initialize(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Destructor for the wrapper
+       * @brief  封装类的析构
        */
       ~DWAPlannerROS();
 
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @brief  计算下发速度根据机器人的位姿，当前速度和目标点
+       * @param cmd_vel 下发速度
+       * @return True:找到有效路径
        */
       bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
 
 
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base, using dynamic window approach
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @brief  根据机器人的位姿，当前速度和目标点，用动态窗口方法计算下发速度
+       * @param cmd_vel 下发速度
+       * @return True:找到有效路径
        */
       bool dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose, geometry_msgs::Twist& cmd_vel);
 
       /**
-       * @brief  Set the plan that the controller is following
-       * @param orig_global_plan The plan to pass to the controller
-       * @return True if the plan was updated successfully, false otherwise
+       * @brief  更新全局路径
+       * @param orig_global_plan 传递给局部规划器的全局路径
+       * @return True: 更新成功
        */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
       /**
-       * @brief  Check if the goal pose has been achieved
-       * @return True if achieved, false otherwise
+       * @brief  是否到达目标点
+       * @return True : 到达目标点
        */
       bool isGoalReached();
 
@@ -121,7 +119,7 @@ namespace dwa_local_planner {
 
     private:
       /**
-       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
+       * @brief 动态更新局部规划器参数的回调函数
        */
       void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
@@ -129,14 +127,15 @@ namespace dwa_local_planner {
 
       void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
-      tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
+      tf2_ros::Buffer* tf_; ///< @brief 用于点云转换
 
-      // for visualisation, publishers of global and local plan
+      // 全局和局部路径的可视化
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
+      // 用来存储运动控制参数以及costmap2d、tf等，会被传入dp_
       base_local_planner::LocalPlannerUtil planner_util_;
-
-      boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
+      // 指向dwa局部路径规划器类的共享指针
+      boost::shared_ptr<DWAPlanner> dp_;
 
       costmap_2d::Costmap2DROS* costmap_ros_;
 
@@ -144,13 +143,13 @@ namespace dwa_local_planner {
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
       geometry_msgs::PoseStamped current_pose_;
-
+      // 到达目标点后的停止然后旋转的运动控制类
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
 
       bool initialized_;
 
-
+      // 用来辅助获取odom信息，会被传入dp_
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
   };

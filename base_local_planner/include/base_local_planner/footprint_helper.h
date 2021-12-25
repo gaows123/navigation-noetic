@@ -77,8 +77,8 @@ public:
   void getLineCells(int x0, int x1, int y0, int y1, std::vector<base_local_planner::Position2DInt>& pts);
 
   /**
-   * @brief Fill the outline of a polygon, in this case the robot footprint, in a grid
-   * @param footprint The list of cells making up the footprint in the grid, will be modified to include all cells inside the footprint
+   * @brief  填充多边形的轮廓，即机器人的footprint
+   * @param footprint  组成footprint的单元格集合
    */
   void getFillCells(std::vector<base_local_planner::Position2DInt>& footprint);
 };

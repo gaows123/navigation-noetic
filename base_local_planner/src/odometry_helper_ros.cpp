@@ -64,7 +64,7 @@ void OdometryHelperRos::getOdom(nav_msgs::Odometry& base_odom) {
   base_odom = base_odom_;
 }
 
-
+// 获得机器人速度
 void OdometryHelperRos::getRobotVel(geometry_msgs::PoseStamped& robot_vel) {
   // 从里程计得到当前速度
   geometry_msgs::Twist global_vel;
@@ -85,6 +85,7 @@ void OdometryHelperRos::getRobotVel(geometry_msgs::PoseStamped& robot_vel) {
   robot_vel.header.stamp = ros::Time();
 }
 
+// 如果里程计的默认话题名字和实际不一致，用实际里程计话题名，并订阅里程计信息
 void OdometryHelperRos::setOdomTopic(std::string odom_topic)
 {
   if( odom_topic != odom_topic_ )

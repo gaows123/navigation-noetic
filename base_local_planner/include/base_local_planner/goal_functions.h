@@ -54,11 +54,11 @@
 namespace base_local_planner {
 
   /**
-   * @brief  return squared distance to check if the goal position has been achieved
-   * @param  global_pose The pose of the robot in the global frame
-   * @param  goal_x The desired x value for the goal
-   * @param  goal_y The desired y value for the goal
-   * @return distance to goal
+   * @brief  返回距离的平方来检测是否到达目标点
+   * @param  global_pose 全局位姿
+   * @param  goal_x 目标点x坐标
+   * @param  goal_y 目标点y坐标
+   * @return 到目标点距离
    */
   double getGoalPositionDistance(const geometry_msgs::PoseStamped& global_pose, double goal_x, double goal_y);
 
@@ -146,7 +146,7 @@ namespace base_local_planner {
    * @param trans_stopped_velocity The translational velocity below which the robot is considered stopped
    * @return True if the robot is stopped, false otherwise
    */
-  bool stopped(const nav_msgs::Odometry& base_odom, 
+  bool stopped(const nav_msgs::Odometry& base_odom,
       const double& rot_stopped_velocity,
       const double& trans_stopped_velocity);
 };

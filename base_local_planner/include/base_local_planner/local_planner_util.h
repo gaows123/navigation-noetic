@@ -77,7 +77,7 @@ private:
 public:
 
   /**
-   * @brief  Callback to update the local planner's parameters
+   * @brief  更新局部规划器参数的回调函数
    */
   void reconfigureCB(LocalPlannerLimits &config, bool restore_defaults);
 

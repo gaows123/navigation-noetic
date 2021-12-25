@@ -43,7 +43,7 @@
 namespace base_local_planner {
 
   /**
-   * We use the class to get even sized samples between min and max, inluding zero if it is not included (and range goes from negative to positive
+   *  VelocityIterator用于获得相同大小的最大和最小值, inluding zero if it is not included (and range goes from negative to positive
    */
   class VelocityIterator {
     public:

@@ -56,7 +56,7 @@
 #include <nav_core/parameter_magic.h>
 #include <tf2/utils.h>
 
-//register this planner as a BaseLocalPlanner plugin
+//register this planner as a BaseLocalPlanner plugin 注册局部规划器为一个插件
 PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace base_local_planner {
@@ -64,7 +64,7 @@ namespace base_local_planner {
   void TrajectoryPlannerROS::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) {
       if (setup_ && config.restore_defaults) {
         config = default_config_;
-        //Avoid looping
+        //Avoid looping 避免循环
         config.restore_defaults = false;
       }
       if ( ! setup_) {
@@ -174,7 +174,7 @@ namespace base_local_planner {
                                                                   "goal_distance_bias",
                                                                   "gdist_scale",
                                                                   0.6);
-      // values of the deprecated params need to be applied to the current params, as defaults 
+      // values of the deprecated params need to be applied to the current params, as defaults
       // of defined for dynamic reconfigure will override them otherwise.
       if (private_nh.hasParam("pdist_scale") & !private_nh.hasParam("path_distance_bias"))
       {
@@ -237,7 +237,7 @@ namespace base_local_planner {
 
       simple_attractor = false;
 
-      //parameters for using the freespace controller
+      //parameters for using the freespace controller 自由空间的局部规划器参数设置
       double min_pt_separation, max_obstacle_height, grid_resolution;
       private_nh.param("point_grid/max_sensor_range", max_sensor_range_, 2.0);
       private_nh.param("point_grid/min_pt_separation", min_pt_separation, 0.01);
@@ -344,13 +344,15 @@ namespace base_local_planner {
         std::min(-1.0 * min_in_place_vel_th_, ang_diff));
 
     //take the acceleration limits of the robot into account
+    // 考虑机器人的加速度限制
     double max_acc_vel = fabs(vel_yaw) + acc_lim_theta_ * sim_period_;
     double min_acc_vel = fabs(vel_yaw) - acc_lim_theta_ * sim_period_;
 
     v_theta_samp = sign(v_theta_samp) * std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
 
     //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
-    double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff)); 
+    // 当然下发速度也要考虑到当机器人到了目标点后能够在满足加速度限制情况下及时刹车
+    double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff));
 
     v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
 
@@ -382,12 +384,15 @@ namespace base_local_planner {
     }
 
     //reset the global plan
+    // 重置全局路径
     global_plan_.clear();
     global_plan_ = orig_global_plan;
-    
+
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+    // 更新了新的全局路径后，需要清除goal tolearnce的latch
     xy_tolerance_latch_ = false;
     //reset the at goal flag
+    // 重置到达目标点的标志
     reached_goal_ = false;
     return true;
   }
@@ -411,7 +416,7 @@ namespace base_local_planner {
       return false;
     }
 
-    //now we'll prune the plan based on the position of the robot
+    //now we'll prune the plan based on the position of the robot 根据机器人的当前位置修剪全局路径
     if(prune_plan_)
       prunePlan(global_pose, transformed_plan, global_plan_);
 
@@ -427,12 +432,13 @@ namespace base_local_planner {
     gettimeofday(&start, NULL);
     */
 
-    //if the global plan passed in is empty... we won't do anything
+    //if the global plan passed in is empty... we won't do anything如果全局路径是空，不做任何的操作
     if(transformed_plan.empty())
       return false;
 
     const geometry_msgs::PoseStamped& goal_point = transformed_plan.back();
     //we assume the global goal is the last point in the global plan
+    // 假设目标点是全局路径的最后一个点
     const double goal_x = goal_point.pose.position.x;
     const double goal_y = goal_point.pose.position.y;
 
@@ -441,6 +447,7 @@ namespace base_local_planner {
     double goal_th = yaw;
 
     //check to see if we've reached the goal position
+    // 检查是否已经到了目标点位置
     if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
 
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
@@ -450,9 +457,10 @@ namespace base_local_planner {
       }
 
       double angle = getGoalOrientationAngleDifference(global_pose, goal_th);
-      //check to see if the goal orientation has been reached
+      //check to see if the goal orientation has been reached 检查机器人是否已经旋转到目标点的朝向
       if (fabs(angle) <= yaw_goal_tolerance_) {
         //set the velocity command to zero
+        // 设置下发速度为零
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
@@ -612,6 +620,6 @@ namespace base_local_planner {
       return false;
     }
     //return flag set in controller
-    return reached_goal_; 
+    return reached_goal_;
   }
 };

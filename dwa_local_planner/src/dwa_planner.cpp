@@ -287,14 +287,14 @@ namespace dwa_local_planner {
 
 
   /*
-   * given the current state of the robot, find a good trajectory
+   *  获得机器人当前状态，找到最优局部路径
    */
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& global_vel,
       geometry_msgs::PoseStamped& drive_velocities) {
 
-    //make sure that our configuration doesn't change mid-run
+    // 这里要加锁，避免数据被修改
     boost::mutex::scoped_lock l(configuration_mutex_);
 
     Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
@@ -308,12 +308,14 @@ namespace dwa_local_planner {
         vel,
         goal,
         &limits,
-        vsamples_);
+        vsamples_); // 获取采样速度，generator_是SimpleTrajectoryGenerator的对象
 
+    // 刚开始轨迹设为不可行
     result_traj_.cost_ = -7;
 
     // 通过采样和样本打分来找到最优轨迹
     std::vector<base_local_planner::Trajectory> all_explored;
+    // 发现最优路径。result_traj_就是最优路径，all_explored就是所有的路径是为了显示
     scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
 
     if(publish_traj_pc_)
@@ -367,7 +369,7 @@ namespace dwa_local_planner {
     // debrief stateful scoring functions
     oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_vel_trans);
 
-    //if we don't have a legal trajectory, we'll just command zero
+    // 如果没有计算出有效的局部路径，则下发停止命令
     if (result_traj_.cost_ < 0) {
       drive_velocities.pose.position.x = 0;
       drive_velocities.pose.position.y = 0;

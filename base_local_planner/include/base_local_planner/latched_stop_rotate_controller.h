@@ -17,6 +17,7 @@
 
 namespace base_local_planner {
 
+// 当机器人里目标点足够近的时候，LatchedStopRotateController控制器会被调用
 class LatchedStopRotateController {
 public:
   LatchedStopRotateController(const std::string& name = "");
@@ -34,11 +35,11 @@ public:
   }
 
   /**
-   * @brief Stop the robot taking into account acceleration limits
-   * @param  global_pose The pose of the robot in the global frame
-   * @param  robot_vel The velocity of the robot
-   * @param  cmd_vel The velocity commands to be filled
-   * @return  True if a valid trajectory was found, false otherwise
+   * @brief 停止机器人同时考虑加速度的限制
+   * @param  global_pose 机器人位姿
+   * @param  robot_vel 机器人速度
+   * @param  cmd_vel 下发速度
+   * @return  True : 找到有效路径
    */
   bool stopWithAccLimits(const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& robot_vel,
@@ -50,12 +51,12 @@ public:
                             Eigen::Vector3f vel_samples)> obstacle_check);
 
   /**
-   * @brief Once a goal position is reached... rotate to the goal orientation
-   * @param  global_pose The pose of the robot in the global frame
-   * @param  robot_vel The velocity of the robot
-   * @param  goal_th The desired th value for the goal
-   * @param  cmd_vel The velocity commands to be filled
-   * @return  True if a valid trajectory was found, false otherwise
+   * @brief Once a goal position is reached... rotate to the goal orientation 一旦到达目标点位置，开始旋转进行角度对齐
+   * @param  global_pose 机器人位置
+   * @param  robot_vel 机器人速度
+   * @param  goal_th 期望的朝向角度
+   * @param  cmd_vel 下发速度
+   * @return  True : 找到有效路径
    */
   bool rotateToGoal(const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& robot_vel,
@@ -84,7 +85,8 @@ private:
   }
 
 
-  // whether to latch at all, and whether in this turn we have already been in goal area
+  // latch_xy_goal_tolerance_ 是否有latch机器人的需求,
+  // xy_tolerance_latch_ 状态反馈机器人是否已经到了目标区域，只需要旋转就行
   bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
   bool rotating_to_goal_;
 };
