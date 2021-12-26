@@ -62,6 +62,16 @@ public:
 
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                             double* max_x, double* max_y);
+
+
+  /**
+   * @brief  根据机器人的位姿，当前速度和目标点，用动态窗口方法计算下发速度
+   * @param master_grid： master costmap 地图
+   * @param min_i 地图最小i，以像素坐标表示
+   * @param min_j 地图最小j，以像素坐标表示
+   * @param max_i 地图最大i，以像素坐标表示
+   * @param max_j 地图最大j，以像素坐标表示
+   */
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
   virtual void matchSize();
@@ -79,21 +89,22 @@ private:
 
   unsigned char interpretValue(unsigned char value);
 
-  std::string global_frame_;  ///< @brief The global frame for the costmap
-  std::string map_frame_;  /// @brief frame that map is located in
+  std::string global_frame_;  // 代价地图全局坐标系
+  std::string map_frame_;  // 地图坐标系
   bool subscribe_to_updates_;
   bool map_received_;
   bool has_updated_data_;
 
-  // *在接收到地图时，x_, y_被置为0,width_, height_ 被设为地图宽高
+  // 在接收到地图时，x_, y_被置为0,width_, height_ 被设为地图宽高
   unsigned int x_, y_, width_, height_;
-  //默认没有配置，使用true
+  // 默认没有配置，使用true
   bool track_unknown_space_;
   bool use_maximum_;
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing
   bool trinary_costmap_;
   ros::Subscriber map_sub_, map_update_sub_;
-
+  // lethal_threshold_：致命cost的阈值，使用默认的为100
+  // unknown_cost_value_：未知的区域，cost 值为255
   unsigned char lethal_threshold_, unknown_cost_value_;
 
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;

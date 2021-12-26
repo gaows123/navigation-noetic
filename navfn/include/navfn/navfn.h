@@ -1,13 +1,13 @@
 /*********************************************************************
 * Software License Agreement (BSD License)
-* 
+*
 *  Copyright (c) 2008, Willow Garage, Inc.
 *  All rights reserved.
-* 
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions
 *  are met:
-* 
+*
 *   * Redistributions of source code must retain the above copyright
 *     notice, this list of conditions and the following disclaimer.
 *   * Redistributions in binary form must reproduce the above
@@ -17,7 +17,7 @@
 *   * Neither the name of the Willow Garage nor the names of its
 *     contributors may be used to endorse or promote products derived
 *     from this software without specific prior written permission.
-* 
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -88,7 +88,7 @@ NOTE: will be modified to have a border of obstacle costs
 \param goal X,Y position of goal cell
 \param start X,Y position of start cell
 
-Returns length of plan if found, and fills an array with x,y interpolated 
+Returns length of plan if found, and fills an array with x,y interpolated
 positions at about 1/2 cell resolution; else returns 0.
 
 */
@@ -101,15 +101,15 @@ positions at about 1/2 cell resolution; else returns 0.
 
   /**
    * @class NavFn
-   * @brief Navigation function class. Holds buffers for costmap, navfn map. Maps are pixel-based. Origin is upper left, x is right, y is down. 
+   * @brief Navigation function class. Holds buffers for costmap, navfn map. Maps are pixel-based. Origin is upper left, x is right, y is down.
    */
   class NavFn
   {
     public:
       /**
        * @brief  Constructs the planner
-       * @param nx The x size of the map 
-       * @param ny The y size of the map 
+       * @param nx The x size of the map
+       * @param ny The y size of the map
        */
       NavFn(int nx, int ny);	// size of map
 
@@ -117,15 +117,15 @@ positions at about 1/2 cell resolution; else returns 0.
 
       /**
        * @brief  Sets or resets the size of the map
-       * @param nx The x size of the map 
-       * @param ny The y size of the map 
+       * @param nx The x size of the map
+       * @param ny The y size of the map
        */
       void setNavArr(int nx, int ny); /**< sets or resets the size of the map */
       int nx, ny, ns;		/**< size of grid, in pixels */
 
       /**
-       * @brief  Set up the cost array for the planner, usually from ROS  
-       * @param cmap The costmap 
+       * @brief  Set up the cost array for the planner, usually from ROS
+       * @param cmap The costmap
        * @param isROS Whether or not the costmap is coming in in ROS format
        * @param allow_unknown Whether or not the planner should be allowed to plan through unknown space
        */
@@ -178,27 +178,27 @@ positions at about 1/2 cell resolution; else returns 0.
       int curPe, nextPe, overPe; /**< end points of arrays */
 
       /** block priority thresholds */
-      float curT;			/**< current threshold */
+      float curT;			/**< 当前传播阈值 current threshold */
       float priInc;			/**< priority threshold increment */
 
       /** goal and start positions */
       /**
        * @brief  Sets the goal position for the planner. Note: the navigation cost field computed gives the cost to get to a given point from the goal, not from the start.
-       * @param goal the goal position 
+       * @param goal the goal position
        */
-      void setGoal(int *goal);	
+      void setGoal(int *goal);
 
       /**
        * @brief  Sets the start position for the planner. Note: the navigation cost field computed gives the cost to get to a given point from the goal, not from the start.
-       * @param start the start position 
+       * @param start the start position
        */
-      void setStart(int *start);	
+      void setStart(int *start);
 
       int goal[2];
       int start[2];
       /**
        * @brief  Initialize cell k with cost v for propagation
-       * @param k the cell to initialize 
+       * @param k the cell to initialize
        * @param v the cost to give to the cell
        */
       void initCost(int k, float v); /**< initialize cell <k> with cost <v>, for propagation */
@@ -206,7 +206,7 @@ positions at about 1/2 cell resolution; else returns 0.
       /** propagation */
 
       /**
-       * @brief  Updates the cell at index n  
+       * @brief  Updates the cell at index n
        * @param n The index to update
        */
       void updateCell(int n);	/**< updates the cell at index <n> */
@@ -244,7 +244,7 @@ positions at about 1/2 cell resolution; else returns 0.
 
       /**
        * @brief  Calculates the path for at mose <n> cycles
-       * @param n The maximum number of cycles to run for 
+       * @param n The maximum number of cycles to run for
        * @return The length of the path found
        */
       int calcPath(int n, int *st = NULL); /**< calculates path for at most <n> cycles, returns path length, 0 if none */

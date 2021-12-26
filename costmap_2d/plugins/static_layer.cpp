@@ -156,27 +156,33 @@ void StaticLayer::matchSize()
 
 unsigned char StaticLayer::interpretValue(unsigned char value)
 {
-  // check if the static value is above the unknown or lethal thresholds
+  // 1. 如果阈值lethal_threshold视为障碍物
+  // 2. 没有信息的就认为是未探测的区域
+  // 3. 否则为自由空间，true, -1
   if (track_unknown_space_ && value == unknown_cost_value_)
+    // map数据为-1 时会进入这里
     return NO_INFORMATION;
   else if (!track_unknown_space_ && value == unknown_cost_value_)
     return FREE_SPACE;
+  // map数据为100 时，>=100 就是致命的障碍物，会进入这里
   else if (value >= lethal_threshold_)
     return LETHAL_OBSTACLE;
   else if (trinary_costmap_)
     return FREE_SPACE;
 
+  // map数据为0 时进入这里
   double scale = (double) value / lethal_threshold_;
   return scale * LETHAL_OBSTACLE;
 }
 
 void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 {
+  // 从地图消息中获取地图的宽和高
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
   ROS_DEBUG("Received a %d X %d map at %f m/pix", size_x, size_y, new_map->info.resolution);
 
-  // resize costmap if size, resolution or origin do not match
+  // 判断master costmap地图是否发生变化，如果有，改变尺寸
   Costmap2D* master = layered_costmap_->getCostmap();
   if (!layered_costmap_->isRolling() &&
       (master->getSizeInCellsX() != size_x ||
@@ -185,30 +191,35 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
        master->getOriginX() != new_map->info.origin.position.x ||
        master->getOriginY() != new_map->info.origin.position.y))
   {
-    // Update the size of the layered costmap (and all layers, including this one)
+    // 如果master costmap 层发生变化，就更新layered_costmap_ 范围
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y,
                                 true /* set size_locked to true, prevents reconfigureCb from overriding map size*/);
   }
+  // 一开始size_x_为0,所以会进入并仅仅更新static costmap 层
   else if (size_x_ != size_x || size_y_ != size_y ||
            resolution_ != new_map->info.resolution ||
            origin_x_ != new_map->info.origin.position.x ||
            origin_y_ != new_map->info.origin.position.y)
   {
     // only update the size of the costmap stored locally in this layer
+    // 仅更新static costmap 层信息
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     resizeMap(size_x, size_y, new_map->info.resolution,
               new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
 
+  // size_x_，size_y_是从Costmap2D类中继承过来的
+  // 此时size_x_，size_y_，resolution_，origin_x_，origin_y_都已经和输入的map消息同步
   unsigned int index = 0;
 
-  // initialize the costmap with static data
+  // 根据新地图中的数据来更新代价地图的值,具体转换在interpretValue函数
   for (unsigned int i = 0; i < size_y; ++i)
   {
     for (unsigned int j = 0; j < size_x; ++j)
     {
+      // 地图传来的值为-1(即255),0 和100
       unsigned char value = new_map->data[index];
       costmap_[index] = interpretValue(value);
       ++index;
@@ -216,14 +227,14 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   }
   map_frame_ = new_map->header.frame_id;
 
-  // we have a new map, update full size of map
+  // 有了新地图，更新高和宽
   x_ = y_ = 0;
-  width_ = size_x_;
+  width_ = size_x_; // 这个是以像素坐标系(地图左下角)为参考的坐标，是int类型
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
 
-  // shutdown the map subscrber if firt_map_only_ flag is on
+  // 如果first_map_only_标志位是打开的，关闭map订阅
   if (first_map_only_)
   {
     ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
@@ -274,6 +285,7 @@ void StaticLayer::reset()
   }
 }
 
+// 参数 min_x=min_y=1e30，max_x=max_y=-1e30. 没有用到robot_x，robot_y,robot_yaw
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                double* max_x, double* max_y)
 {
@@ -301,11 +313,7 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   has_updated_data_ = false;
 }
 
-/*
- @brief：用static costmap 的值更新master costmap 的值
-*@param:master_grid： 是master costmap 地图
-* min_i,min_j,max_i,max_j 是该master costmap 地图的范围，以像素坐标表示
-*/
+
 void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_received_)
@@ -315,7 +323,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   {
     // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
     // 静态costmap 会进入这里面，会获取static costmap 的cost 值，然后更新master costmap
-    //  *static costmap 的cost 值是在incomingMap函数中处理初始化的，该函数在costmap_2d 中实现
+    //  static costmap 的cost 值是在incomingMap函数中处理初始化的，该函数在costmap_2d 中实现
     if (!use_maximum_)
       updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
     else
@@ -323,10 +331,10 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   }
   else
   {
-    // If rolling window, the master_grid is unlikely to have same coordinates as this layer
+    // 如果rolling window, master_grid可能和这个层的坐标系不一样了
     unsigned int mx, my;
     double wx, wy;
-    // Might even be in a different frame
+    // 可能不在同个坐标系
     geometry_msgs::TransformStamped transform;
     try
     {

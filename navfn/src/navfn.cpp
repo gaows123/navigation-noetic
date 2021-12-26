@@ -313,7 +313,7 @@ namespace navfn {
       // 全局路径
       int len = calcPath(nx*ny/2);
 
-      if (len > 0)			// found plan
+      if (len > 0)			// 找到全局路径
       {
         ROS_DEBUG("[NavFn] Path found, %d steps\n", len);
         return true;
@@ -378,7 +378,7 @@ namespace navfn {
   void
     NavFn::setupNavFn(bool keepit)
     {
-      //重新设置势场矩阵potarr的值
+      // step 1: 重新设置potarr的值
       for (int i=0; i<ns; i++)
       {
         // 将potarr初始化为最大值，默认起点到所有点的行走代价值都为最大
@@ -388,8 +388,7 @@ namespace navfn {
         gradx[i] = grady[i] = 0.0;
       }
 
-      // outer bounds of cost array
-      // 接下来设置costarr的四条边的cell的值为COST_OBS(致命层254)，封闭地图四周，以防产生边界以外的轨迹。
+      // step 2: 接下来设置costarr的四条边的cell的值为COST_OBS(致命层254)，封闭地图四周，以防产生边界以外的轨迹。
       COSTTYPE *pc;
       pc = costarr;
       // costarr第一行全部设置为COST_OBS(致命层254)
@@ -408,7 +407,7 @@ namespace navfn {
       for (int i=0; i<ny; i++, pc+=nx)
         *pc = COST_OBS;
 
-      // 初始化一些用于迭代更新potarr的数据，并初始化pending数组为全0，设置所有的cell状态都为非等待状态。
+      // step 3: 初始化一些用于迭代更新potarr的数据，并初始化pending数组为全0，设置所有的cell状态都为非等待状态。
       // 优先级缓冲
       curT = COST_OBS; //当前传播阈值
       curP = pb1; //当前用于传播的cell索引数组
@@ -421,10 +420,10 @@ namespace navfn {
 
       // k为目标cell的索引
       int k = goal[0] + goal[1]*nx;
-      // costarr的索引k（目标点）的元素值设为0，并对它四周的cell在pending[]中进行标记“等待状态”，并把索引存放入curP数组
+      // step 4: costarr的索引k（目标点）的元素值设为0，并对它四周的cell在pending[]中进行标记“等待状态”，并把索引存放入curP数组
       initCost(k,0);
 
-      // 更新障碍物单元格的数量nobs
+      // step 5: 更新障碍物单元格的数量nobs
       pc = costarr;
       int ntot = 0;
       for (int i=0; i<ns; i++, pc++)
@@ -463,7 +462,7 @@ namespace navfn {
   inline void
     NavFn::updateCell(int n)
     {
-      // get neighbors
+      // 获得邻点
       float u,d,l,r;
       l = potarr[n-1];
       r = potarr[n+1];
@@ -480,7 +479,7 @@ namespace navfn {
 
       // 下面执行一个判断，只有当当前cell不是致命障碍物时，才由它向四周传播，否则到它后停止，不传播。
       // do planar wave update
-      if (costarr[n] < COST_OBS)	// don't propagate into obstacles
+      if (costarr[n] < COST_OBS)	// 不要传播到了障碍物那边了
       {
         float hf = (float)costarr[n]; // traversability factor
         float dc = tc-ta;		// relative cost between ta,tc
