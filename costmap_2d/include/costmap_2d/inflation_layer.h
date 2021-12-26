@@ -98,9 +98,12 @@ public:
 
   virtual void reset() { onInitialize(); }
 
-  /** @brief  Given a distance, compute a cost.
-   * @param  distance The distance from an obstacle in cells
-   * @return A cost value for the distance */
+  /** @brief  根据距离计算代价，大概分三个情况:
+   * 1. 如果distance为0，即(0,0)点，则设置cached_costs_上的值为LETHAL_OBSTACLE(254)，表示为障碍物本身；
+   * 2. 如果distance ≤ 机器人足迹内切圆半径，设置值为INSCRIBED_INFLATED_OBSTACLE（253），即由于机器人有体积造成的障碍物膨胀；
+   * 3. 如果机器人足迹内切圆半径 < distance ≤ cell_inflation_radius_，则以距离远近为比例（指数型）设置值。
+   * @param  distance 障碍物单元格的距离
+   * @return 对于这个距离的代价值 */
   virtual inline unsigned char computeCost(double distance) const
   {
     unsigned char cost = 0;

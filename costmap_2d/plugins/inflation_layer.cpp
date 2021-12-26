@@ -126,6 +126,7 @@ void InflationLayer::matchSize()
   seen_ = new bool[seen_size_];
 }
 
+// need_reinflation_默认false，更新bound这里和其他两层的主要区别是，膨胀层在传入的bound的值的基础上，通过inflation_radius_再次扩张
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
@@ -173,6 +174,7 @@ void InflationLayer::onFootprintChanged()
             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
 }
 
+// 用指针master_array指向主地图，并获取主地图的尺寸，确认seen_数组被正确设置
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
@@ -203,6 +205,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
   // up to that distance outside the box can still influence the costs
   // stored in cells inside the box.
+  // 边缘膨胀
   min_i -= cell_inflation_radius_;
   min_j -= cell_inflation_radius_;
   max_i += cell_inflation_radius_;
@@ -307,27 +310,30 @@ inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigne
 
 void InflationLayer::computeCaches()
 {
+  // cell_inflation_radius_为零说明不用膨胀了
   if (cell_inflation_radius_ == 0)
     return;
 
-  // based on the inflation radius... compute distance and cost caches
+  // 基于膨胀半径，计算cached_distances_和cached_costs_，两者为下面膨胀计算的参照物
   if (cell_inflation_radius_ != cached_cell_inflation_radius_)
   {
     deleteKernels();
-
+    // cached_distances_和cached_costs_的行数都是cell_inflation_radius_+2
     cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
     cached_distances_ = new double*[cell_inflation_radius_ + 2];
 
     for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
     {
+      // cached_distances_和cached_costs_的列数也是cell_inflation_radius_+2
       cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
       cached_distances_[i] = new double[cell_inflation_radius_ + 2];
       for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
       {
+        //每个元素的值为它到(0,0)点的距离
         cached_distances_[i][j] = hypot(i, j);
       }
     }
-
+    // 设置cached_cell_inflation_radius_，这个if内程序不会再次进入
     cached_cell_inflation_radius_ = cell_inflation_radius_;
   }
 
