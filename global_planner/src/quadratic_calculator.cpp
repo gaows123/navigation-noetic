@@ -41,7 +41,7 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
     //     potential[n], l, r, u, d);
     //  ROS_INFO("[Update] cost: %d\n", costs[n]);
 
-    // find lowest, and its lowest neighbor
+    // find lowest, and its lowest neighbor 找到最低的，以及它的最低邻居
     float ta, tc;
     if (l < r)
         tc = l;
@@ -52,16 +52,16 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
     else
         ta = d;
 
-    float hf = cost; // traversability factor
-    float dc = tc - ta;        // relative cost between ta,tc
-    if (dc < 0)         // tc is lowest
+    float hf = cost; // traversability factor 可通行的因子
+    float dc = tc - ta;        // ta和tc之间的相对代价
+    if (dc < 0)         // tc is lowest tc是最低的
             {
         dc = -dc;
         ta = tc;
     }
 
-    // calculate new potential
-    if (dc >= hf)        // if too large, use ta-only update
+    // calculate new potential 计算新的势场
+    if (dc >= hf)        // if too large, use ta-only update 如果太多，只用ta更新
         return ta + hf;
     else            // two-neighbor interpolation update
     {

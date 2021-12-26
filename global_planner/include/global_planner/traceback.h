@@ -60,7 +60,7 @@ class Traceback {
     protected:
         int xs_, ys_;
         unsigned char lethal_cost_;
-        PotentialCalculator* p_calc_;
+        PotentialCalculator* p_calc_;  // 计算“一个点”的可行性
 };
 
 } //end namespace global_planner

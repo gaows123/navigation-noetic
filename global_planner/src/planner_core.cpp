@@ -109,28 +109,34 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         bool use_quadratic;
         private_nh.param("use_quadratic", use_quadratic, true);
+        // 根据选择new出对应的p_calc_实例. 计算“一个点”的可行性
         if (use_quadratic)
-            p_calc_ = new QuadraticCalculator(cx, cy);
+            p_calc_ = new QuadraticCalculator(cx, cy); // 使用二次差值近似的potential
         else
-            p_calc_ = new PotentialCalculator(cx, cy);
+            p_calc_ = new PotentialCalculator(cx, cy); //
 
         bool use_dijkstra;
         private_nh.param("use_dijkstra", use_dijkstra, true);
+        // 根据选择new出对应的planner实例. 计算“所有”的可行点
         if (use_dijkstra)
         {
+            // dijkstra算法
             DijkstraExpansion* de = new DijkstraExpansion(p_calc_, cx, cy);
             if(!old_navfn_behavior_)
                 de->setPreciseStart(true);
             planner_ = de;
         }
         else
-            planner_ = new AStarExpansion(p_calc_, cx, cy);
+            planner_ = new AStarExpansion(p_calc_, cx, cy);   // A*算法
 
         bool use_grid_path;
         private_nh.param("use_grid_path", use_grid_path, false);
+        // 路径方法，new出path_maker_实例。从可行点中提取路径
         if (use_grid_path)
+            // 栅格路径，从终点开始找上下或左右4个中最小的栅格直到起点
             path_maker_ = new GridPath(p_calc_);
         else
+            // 梯度路径，从周围八个栅格中找到下降梯度最大的点
             path_maker_ = new GradientPath(p_calc_);
 
         orientation_filter_ = new OrientationFilter();
@@ -215,6 +221,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     return makePlan(start, goal, default_tolerance_, plan);
 }
 
+// 两个步骤完成路径的生成：
+// （①计算可行点矩阵potential_array (planner_->calculatePotentials)
+//  ②从可行点矩阵中提取路径plan (path_maker_->getPath)）
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            double tolerance, std::vector<geometry_msgs::PoseStamped>& plan) {
     boost::mutex::scoped_lock lock(mutex_);
@@ -300,6 +309,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     if (found_legal) {
         //extract the plan
+        // 通过代价用path_maker_->getPath得到路径
         if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
             geometry_msgs::PoseStamped goal_copy = goal;
@@ -313,6 +323,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     }
 
     // add orientations if needed
+    //  给路径加方向
     orientation_filter_->processPath(start, plan);
 
     //publish the plan for visualization purposes

@@ -41,19 +41,23 @@
 namespace global_planner {
 
 bool GridPath::getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path) {
+
     std::pair<float, float> current;
     current.first = end_x;
     current.second = end_y;
 
+    // step 1.将目标点的(x,y)作为当前点加入path
     int start_index = getIndex(start_x, start_y);
 
     path.push_back(current);
     int c = 0;
     int ns = xs_ * ys_;
-    
+
+    // step 2.进入循环，继续循环的条件为当前点的索引不是起始点
     while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
+        // step 3.搜索当前点的四周的四个临近点，选取这四个临近点的potential的值最小的点
         for (int xd = -1; xd <= 1; xd++) {
             for (int yd = -1; yd <= 1; yd++) {
                 if (xd == 0 && yd == 0)
@@ -69,10 +73,12 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
         }
         if (min_x == 0 && min_y == 0)
             return false;
+
+        // step 4.将potential值最小的点更改为当前点，并加入path
         current.first = min_x;
         current.second = min_y;
         path.push_back(current);
-        
+
         if(c++>ns*4){
             return false;
         }

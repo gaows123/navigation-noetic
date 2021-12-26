@@ -60,55 +60,55 @@ class GridPath;
 
 /**
  * @class PlannerCore
- * @brief Provides a ROS wrapper for the global_planner planner which runs a fast, interpolated navigation function on a costmap.
+ * @brief 给全局路径规划器提供了封装类
  */
 
 class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     public:
         /**
-         * @brief  Default constructor for the PlannerCore object
+         * @brief  默认构造函数
          */
         GlobalPlanner();
 
         /**
-         * @brief  Constructor for the PlannerCore object
-         * @param  name The name of this planner
-         * @param  costmap A pointer to the costmap to use
-         * @param  frame_id Frame of the costmap
+         * @brief  构造函数
+         * @param  name 全局规划器名字
+         * @param  costmap 代价地图的指针
+         * @param  frame_id 代价地图的坐标系
          */
         GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
-         * @brief  Default deconstructor for the PlannerCore object
+         * @brief  析构函数
          */
         ~GlobalPlanner();
 
         /**
-         * @brief  Initialization function for the PlannerCore object
-         * @param  name The name of this planner
-         * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+         * @brief  PlannerCore 对象的初始化函数
+         * @param  name 全局规划器名字
+         * @param  costmap_ros 代价地图ros封装类的指针
          */
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
         void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
-         * @brief Given a goal pose in the world, compute a plan
-         * @param start The start pose
-         * @param goal The goal pose
-         * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
+         * @brief 根据目标点规划处全局路径
+         * @param start 起始位姿
+         * @param goal 目标位姿
+         * @param plan 全局规划路径
+         * @return True : 找到全局路径
          */
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                       std::vector<geometry_msgs::PoseStamped>& plan);
 
         /**
-         * @brief Given a goal pose in the world, compute a plan
-         * @param start The start pose
-         * @param goal The goal pose
-         * @param tolerance The tolerance on the goal point for the planner
-         * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
+         * @brief 根据目标点规划处全局路径
+         * @param start 起始位姿
+         * @param goal 目标位姿
+         * @param tolerance 全局规划的误差范围
+         * @param plan 全局规划路径
+         * @return True : 找到全局路径
          */
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double tolerance,
                       std::vector<geometry_msgs::PoseStamped>& plan);
@@ -157,7 +157,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
 
         /**
-         * @brief  Publish a path for visualization purposes
+         * @brief  发布路径信息，用于可视化
          */
         void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -166,7 +166,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     protected:
 
         /**
-         * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
+         * @brief 拷贝了一份当前代价地图，会被makePlan调用
          */
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
@@ -194,7 +194,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
 
-        float* potential_array_;
+        float* potential_array_; // 可行点矩阵
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
         bool old_navfn_behavior_;
