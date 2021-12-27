@@ -369,6 +369,7 @@ protected:
       unsigned int abs_dx = abs(dx);
       unsigned int abs_dy = abs(dy);
 
+      // 标记x是前进一格还是后退一个单元格
       int offset_dx = sign(dx);
       int offset_dy = sign(dy) * size_x_;
 
@@ -394,6 +395,7 @@ protected:
 private:
   /**
    * @brief  A 2D implementation of Bresenham's raytracing algorithm... applies an action at each step
+   *  实现了 对于离散的平面点，指定两个点，找到两点之间的其他点，使得这些中间组成一个尽可能趋近直线的点集。
    */
   template<class ActionType>
     inline void bresenham2D(ActionType at, unsigned int abs_da, unsigned int abs_db, int error_b, int offset_a,
@@ -404,7 +406,22 @@ private:
       {
         at(offset);
         offset += offset_a;
-        error_b += abs_db;
+       /*
+         * 下面这个情况，error_b + abs_db就会超过abs_da，所以每次x+1后，y也会+1
+         *         _
+         *       _|
+         *     _|
+         *   _|
+         * _|
+         *
+         * 下面这个情况，error_b + n* abs_db才会超过abs_da,所以每次x+n后，y才会+1
+         *             ___|
+         *         ___|
+         *     ___|
+         * ___|
+          */
+        // https://blog.csdn.net/TurboIan/article/details/86611713
+        error_b += abs_db;  // 为了控制前进上升的斜率
         if ((unsigned int)error_b >= abs_da)
         {
           offset += offset_b;
