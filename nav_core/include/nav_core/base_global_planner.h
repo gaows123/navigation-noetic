@@ -43,29 +43,29 @@
 namespace nav_core {
   /**
    * @class BaseGlobalPlanner
-   * @brief Provides an interface for global planners used in navigation. All global planners written as plugins for the navigation stack must adhere to this interface.
+   * @brief 提供全局路径规划的接口. navigation stack调用的所有全局路径规划器插件都要实现这个接口.
    */
   class BaseGlobalPlanner{
     public:
       /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
-       * @param plan The plan... filled by the planner
-       * @return True if a valid plan was found, false otherwise
+       * @brief 已知世界坐标系下的目标点，计算全局路径
+       * @param start 起始位姿
+       * @param goal 目标位姿
+       * @param plan 被填充的全局路径
+       * @return True 表示找到有效路径
        */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, 
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
           const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan) = 0;
 
       /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
-       * @param plan The plan... filled by the planner
-       * @param cost The plans calculated cost
-       * @return True if a valid plan was found, false otherwise
+       * @brief 已知世界坐标系下的目标点，计算全局路径
+       * @param start 起始位姿
+       * @param goal 目标位姿
+       * @param plan 被填充的全局路径
+       * @param cost 该全局路径的代价
+       * @return True 表示找到有效路径
        */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, 
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
                             const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan,
                             double& cost)
       {
@@ -74,14 +74,14 @@ namespace nav_core {
       }
 
       /**
-       * @brief  Initialization function for the BaseGlobalPlanner
-       * @param  name The name of this planner
-       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       * @brief  BaseGlobalPlanner 的初始化函数
+       * @param  name 全局规划器名字
+       * @param  costmap_ros 指向代价地图ROS封装类的指针
        */
       virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
       /**
-       * @brief  Virtual destructor for the interface
+       * @brief  虚析构
        */
       virtual ~BaseGlobalPlanner(){}
 

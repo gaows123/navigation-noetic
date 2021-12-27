@@ -43,25 +43,25 @@
 namespace nav_core {
   /**
    * @class RecoveryBehavior
-   * @brief Provides an interface for recovery behaviors used in navigation. All recovery behaviors written as plugins for the navigation stack must adhere to this interface.
+   * @brief 提供恢复行为的接口，navigation stack调用的所有恢复行为模块都要实现这个接口.
    */
   class RecoveryBehavior{
     public:
       /**
-       * @brief  Initialization function for the RecoveryBehavior
-       * @param tf A pointer to a transform listener
-       * @param global_costmap A pointer to the global_costmap used by the navigation stack 
-       * @param local_costmap A pointer to the local_costmap used by the navigation stack 
+       * @brief  RecoveryBehavior 的初始化函数
+       * @param tf transform listener 的指针
+       * @param global_costmap 指向 global_costmap 的指针
+       * @param local_costmap 指向 local_costmap 的指针
        */
       virtual void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap) = 0;
 
       /**
-       * @brief   Runs the RecoveryBehavior
+       * @brief   运行RecoveryBehavior
        */
       virtual void runBehavior() = 0;
 
       /**
-       * @brief  Virtual destructor for the interface
+       * @brief  接口的虚析构
        */
       virtual ~RecoveryBehavior(){}
 

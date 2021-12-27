@@ -45,40 +45,40 @@
 namespace nav_core {
   /**
    * @class BaseLocalPlanner
-   * @brief Provides an interface for local planners used in navigation. All local planners written as plugins for the navigation stack must adhere to this interface.
+   * @brief 提供局部路径规划的接口，navigation stack调用的所有局部路径规划器插件都要实现这个接口.
    */
   class BaseLocalPlanner{
     public:
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid velocity command was found, false otherwise
+       * @brief  根据当前位置和朝向，机器人速度，计算下发给底座的速度命令
+       * @param cmd_vel 存储者下发的速度命令
+       * @return True 表示找到有效速度命令
        */
       virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) = 0;
 
       /**
-       * @brief  Check if the goal pose has been achieved by the local planner
-       * @return True if achieved, false otherwise
+       * @brief  检查是否已经到达了目标点
+       * @return True 代表已经到达
        */
       virtual bool isGoalReached() = 0;
 
       /**
-       * @brief  Set the plan that the local planner is following
-       * @param plan The plan to pass to the local planner
-       * @return True if the plan was updated successfully, false otherwise
+       * @brief  更新要跟随的全局路径
+       * @param plan 更新的全局路径
+       * @return True 代表更新成功
        */
       virtual bool setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) = 0;
 
       /**
-       * @brief  Constructs the local planner
-       * @param name The name to give this instance of the local planner
-       * @param tf A pointer to a transform listener
-       * @param costmap_ros The cost map to use for assigning costs to local plans
+       * @brief  构造局部规划器
+       * @param name 局部规划器实例名
+       * @param tf transform listener的指针
+       * @param costmap_ros 指向代价地图ROS封装类的指针
        */
       virtual void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
       /**
-       * @brief  Virtual destructor for the interface
+       * @brief  接口的虚析构
        */
       virtual ~BaseLocalPlanner(){}
 
