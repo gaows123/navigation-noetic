@@ -212,7 +212,7 @@ class AmclNode
     std::vector< bool > lasers_update_;
     std::map< std::string, int > frame_to_laser_;
 
-    // 粒子滤波
+    // 粒子滤波相关变量
     pf_t *pf_;
     double pf_err_, pf_z_;
     bool pf_init_;
@@ -223,7 +223,7 @@ class AmclNode
     double laser_min_range_;
     double laser_max_range_;
 
-    //Nomotion update control
+    // 是否强制更新
     bool m_force_update;  // used to temporarily let amcl update samples even when no motion occurs...
 
     AMCLOdom* odom_;
@@ -1195,16 +1195,16 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   pf_vector_t delta = pf_vector_zero();
 
-  // 如果不是第一帧，看运动幅度是否超过设定值需要更新（第一帧是指更新了地图或者更新初始位姿）
+  // step 如果不是第一帧激光扫描，看运动变化是否超过阈值，超过了则更新（第一帧是指更新了地图或者更新初始位姿）
   if(pf_init_)
   {
-    // Compute change in pose
+    // 计算位姿的变化, 存储到delta 中
     //delta = pf_vector_coord_sub(pose, pf_odom_pose_);
     delta.v[0] = pose.v[0] - pf_odom_pose_.v[0];
     delta.v[1] = pose.v[1] - pf_odom_pose_.v[1];
     delta.v[2] = angle_diff(pose.v[2], pf_odom_pose_.v[2]);
 
-    // See if we should update the filter
+    // 是否需要更新滤波器
     bool update = fabs(delta.v[0]) > d_thresh_ ||
                   fabs(delta.v[1]) > d_thresh_ ||
                   fabs(delta.v[2]) > a_thresh_;
@@ -1216,11 +1216,11 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       for(unsigned int i=0; i < lasers_update_.size(); i++)
         lasers_update_[i] = true;
   }
-  // 第一帧则初始化一些值
+  // step 如果是第一帧激光扫描则初始化一些值
   bool force_publication = false;
   if(!pf_init_)
   {
-    // Pose at last filter update
+    // 最近一次滤波器更新时的位姿
     pf_odom_pose_ = pose;
 
     // Filter is now initialized
@@ -1234,8 +1234,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     resample_count_ = 0;
   }
-  // If the robot has moved, update the filter
-  // 如果已经初始化并需要更新则更新运动模型
+  // 如果已经初始化并且已经运动了，更新运动模型
   else if(pf_init_ && lasers_update_[laser_index])
   {
     //printf("pose\n");
@@ -1256,10 +1255,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   bool resampled = false;
-  // If the robot has moved, update the filter
+  // 已经运动了，更新运动模型
   if(lasers_update_[laser_index])
   {
-    // 这是amcl_odom.cpp中最重要的一个函数，实现了用运动模型来更新现有的每一个粒子的位姿（这里得到的只是当前时刻的先验位姿）
     AMCLLaserData ldata;
     ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
@@ -1333,20 +1331,18 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
               (i * angle_increment);
     }
 
-    //注意这里是amcl_laser.cpp的UpdateSensor，不是amcl_sensor.cpp的。通过判断前面设置的测量模型调用pf_update_sensor，
-    //该函数需要传入相应模型的处理函数，这里所有的测量模型在《概率机器人》的第六章有详细讲，具体自己看，后面只针对自己使用的likelihood_field模型讲一下
-    //pf_update_sensor实现对所有粒子更新权重，并归一化、计算出《概率机器人》8.3.5的失效恢复的长期似然和短期似然
+    // step 通过判断前面设置调用pf_update_sensor函数处理对应的测量模型，这里三个测量模型在《概率机器人》的第六章,
+    // pf_update_sensor实现对所有粒子更新权重，并归一化、计算长期似然和短期似然
     lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
 
     lasers_update_[laser_index] = false;
 
     pf_odom_pose_ = pose;
-    //多少次激光雷达回调之后进行重采样呗，我这里resample_interval_=0.5，只有一个激光雷达，每次都更新。
-    // Resample the particles
+    // resample_interval_次激光雷达回调之后进行粒子重采样，resample_interval_默认为2
     if(!(++resample_count_ % resample_interval_))
     {
       //按照一定的规则重采样粒子，包括前面说的失效恢复、粒子权重等，然后放入到kdtree，暂时先理解成关于位姿的二叉树，
-      //然后进行聚类，得到均值和方差等信息,个人理解就是将相近的一堆粒子融合成一个粒子了，没必要维持太多相近的
+      //然后进行聚类，得到均值和方差等信息,应该是相近的一堆粒子融合成一个粒子了，没必要维持太多相近的
       pf_update_resample(pf_);
       resampled = true;
     }

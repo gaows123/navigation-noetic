@@ -119,13 +119,13 @@ AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Apply the laser sensor model
+// 使用对应的测距传感器模型
 bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
   if (this->max_beams < 2)
     return false;
 
-  // Apply the laser sensor model
+  // 使用对应的测距传感器模型
   if(this->model_type == LASER_MODEL_BEAM)
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD)
