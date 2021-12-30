@@ -1,13 +1,13 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
- * 
+ *
  *  Copyright (c) 2008, Willow Garage, Inc.
  *  All rights reserved.
- * 
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
  *  are met:
- * 
+ *
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
@@ -17,7 +17,7 @@
  *   * Neither the name of the Willow Garage nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -59,8 +59,8 @@
   - @b "base_pose_ground_truth" nav_msgs/Odometry : robot's odometric pose.  Only the position information is used (velocity is ignored).
 
   Publishes to (name / type):
-  - @b "amcl_pose" geometry_msgs/PoseWithCovarianceStamped : robot's estimated pose in the map, with covariance
-  - @b "particlecloud" geometry_msgs/PoseArray : fake set of poses being maintained by the filter (one paricle only).
+  - @b "amcl_pose" geometry_msgs/PoseWithCovarianceStamped : 简单转发仿真器来的位姿 robot's estimated pose in the map, with covariance
+  - @b "particlecloud" geometry_msgs/PoseArray : 在rviz和nav_view中使用，来可视化机器人位姿的粒子云 fake set of poses being maintained by the filter (one paricle only).
 
   <hr>
 
@@ -90,6 +90,7 @@
 #include <tf2_ros/message_filter.h>
 #include "message_filters/subscriber.h"
 
+// fake_localization发布一个tf变换(map->odom的变换)
 class FakeOdomNode
 {
   public:
@@ -104,13 +105,19 @@ class FakeOdomNode
       m_base_pos_received = false;
 
       ros::NodeHandle private_nh("~");
+      // 里程坐标系名字
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
-      private_nh.param("base_frame_id", base_frame_id_, std::string("base_link")); 
+      // 机器人基座坐标系
+      private_nh.param("base_frame_id", base_frame_id_, std::string("base_link"));
+      // 指定使用tf发布global_frame_id→odom_frame_id转换的坐标系
       private_nh.param("global_frame_id", global_frame_id_, std::string("map"));
+      // 地图坐标系与仿真器坐标系原点在x轴方向的偏移
       private_nh.param("delta_x", delta_x_, 0.0);
+      // 地图坐标系与仿真器坐标系原点在y轴方向的偏移
       private_nh.param("delta_y", delta_y_, 0.0);
-      private_nh.param("delta_yaw", delta_yaw_, 0.0);      
-      private_nh.param("transform_tolerance", transform_tolerance_, 0.1);      
+      // 地图坐标系与仿真器坐标系原点在yaw偏航角的偏移
+      private_nh.param("delta_yaw", delta_yaw_, 0.0);
+      private_nh.param("transform_tolerance", transform_tolerance_, 0.1);
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = global_frame_id_;
       m_particleCloud.poses.resize(1);
@@ -120,6 +127,7 @@ class FakeOdomNode
       q.setRPY(0.0, 0.0, -delta_yaw_);
       m_offsetTf = tf2::Transform(q, tf2::Vector3(-delta_x_, -delta_y_, 0.0));
 
+      // 仿真器发布的机器人位置信息。
       stuff_sub_ = nh.subscribe("base_pose_ground_truth", 100, &FakeOdomNode::stuffFilter, this);
       filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
       filter_ = new tf2_ros::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfBuffer, base_frame_id_, 100, nh);
@@ -134,7 +142,7 @@ class FakeOdomNode
     ~FakeOdomNode(void)
     {
       if (m_tfServer)
-        delete m_tfServer; 
+        delete m_tfServer;
       if (m_tfListener)
         delete m_tfListener;
       if (m_tfBuffer)
@@ -152,7 +160,7 @@ class FakeOdomNode
     tf2_ros::Buffer                     *m_tfBuffer;
     tf2_ros::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
     tf2_ros::MessageFilter<nav_msgs::Odometry>* filter_;
-    ros::Subscriber stuff_sub_; 
+    ros::Subscriber stuff_sub_;
     message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
 
     double                         delta_x_, delta_y_, delta_yaw_;
@@ -182,17 +190,21 @@ class FakeOdomNode
 
     void update(const nav_msgs::OdometryConstPtr& message){
       tf2::Transform txi;
+      // 来自odom位姿信息转换成 tf2::Transform 的形式
       tf2::convert(message->pose.pose, txi);
+      // 把坐标系之间的偏差也考虑进去后的odom坐标系下位姿 (map -> base_link)
       txi = m_offsetTf * txi;
 
       geometry_msgs::TransformStamped odom_to_map;
       try
       {
+        // txi_inv: base_link -> map
         geometry_msgs::TransformStamped txi_inv;
         txi_inv.header.frame_id = base_frame_id_;
         txi_inv.header.stamp = message->header.stamp;
         tf2::convert(txi.inverse(), txi_inv.transform);
-
+        // tf2_ros::Buffer.transform(in_pose, out_pose, frame_id_);
+        // base_link->map  ====>   odom->map
         m_tfBuffer->transform(txi_inv, odom_to_map, odom_frame_id_);
       }
       catch(tf2::TransformException &e)
@@ -209,6 +221,7 @@ class FakeOdomNode
       tf2::convert(odom_to_map.transform, odom_to_map_tf2);
       tf2::Transform odom_to_map_inv = odom_to_map_tf2.inverse();
       tf2::convert(odom_to_map_inv, trans.transform);
+      // 发布map->odom的tf转换
       m_tfServer->sendTransform(trans);
 
       tf2::Transform current;
@@ -220,7 +233,7 @@ class FakeOdomNode
       geometry_msgs::Transform current_msg;
       tf2::convert(current, current_msg);
 
-      // Publish localized pose
+      // 发布定位到的位姿，
       m_currentPos.header = message->header;
       m_currentPos.header.frame_id = global_frame_id_;
       tf2::convert(current_msg.rotation, m_currentPos.pose.pose.orientation);
@@ -229,7 +242,7 @@ class FakeOdomNode
       m_currentPos.pose.pose.position.z = current_msg.translation.z;
       m_posePub.publish(m_currentPos);
 
-      // The particle cloud is the current position. Quite convenient.
+      // 粒子云是当前的位姿,用于可视化
       m_particleCloud.header = m_currentPos.header;
       m_particleCloud.poses[0] = m_currentPos.pose.pose;
       m_particlecloudPub.publish(m_particleCloud);
@@ -238,15 +251,15 @@ class FakeOdomNode
     void initPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg){
       tf2::Transform pose;
       tf2::convert(msg->pose.pose, pose);
-
+      // should be map frame
       if (msg->header.frame_id != global_frame_id_){
         ROS_WARN("Frame ID of \"initialpose\" (%s) is different from the global frame %s", msg->header.frame_id.c_str(), global_frame_id_.c_str());
       }
 
-      // set offset so that current pose is set to "initialpose"    
+      // set offset so that current pose is set to "initialpose"
       geometry_msgs::TransformStamped baseInMap;
       try{
-	// just get the latest
+	// just get the latest  map -> base_link
         baseInMap = m_tfBuffer->lookupTransform(base_frame_id_, global_frame_id_, ros::Time(0));
       } catch(tf2::TransformException){
         ROS_WARN("Failed to lookup transform!");
@@ -255,6 +268,7 @@ class FakeOdomNode
 
       tf2::Transform baseInMapTf2;
       tf2::convert(baseInMap.transform, baseInMapTf2);
+      // pose: initial pose in map
       tf2::Transform delta = pose * baseInMapTf2;
       m_offsetTf = delta * m_offsetTf;
 
