@@ -66,7 +66,7 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer*,
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
-    // we'll simulate every degree by default
+    // 默认会模拟仿真每一度(degree)旋转的情况
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
 
@@ -121,18 +121,18 @@ void RotateRecovery::runBehavior()
          (!got_180 ||
           std::fabs(angles::shortest_angular_distance(current_angle, start_angle)) > tolerance_))
   {
-    // Update Current Angle
+    // 更新当前角度
     local_costmap_->getRobotPose(global_pose);
     current_angle = tf2::getYaw(global_pose.pose.orientation);
 
-    // compute the distance left to rotate
+    // 计算要向左旋转的度数
     double dist_left;
     if (!got_180)
     {
       // If we haven't hit 180 yet, we need to rotate a half circle plus the distance to the 180 point
       double distance_to_180 = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + M_PI));
       dist_left = M_PI + distance_to_180;
-
+      // 到了误差允许范围
       if (distance_to_180 < tolerance_)
       {
         got_180 = true;
@@ -146,13 +146,13 @@ void RotateRecovery::runBehavior()
 
     double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
-    // check if that velocity is legal by forward simulating
+    // 检查该速度下的推算位姿是否有碰撞可能
     double sim_angle = 0.0;
     while (sim_angle < dist_left)
     {
       double theta = current_angle + sim_angle;
 
-      // make sure that the point is legal, if it isn't... we'll abort
+      // 确保这个点是有效的，不然会停止
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
       if (footprint_cost < 0.0)
       {
@@ -164,10 +164,10 @@ void RotateRecovery::runBehavior()
       sim_angle += sim_granularity_;
     }
 
-    // compute the velocity that will let us stop by the time we reach the goal
+    // 计算下发速度，让机器人可以在到达终点时停止
     double vel = sqrt(2 * acc_lim_th_ * dist_left);
 
-    // make sure that this velocity falls within the specified limits
+    // 确保下发旋转速度满足速度限制要求
     vel = std::min(std::max(vel, min_rotational_vel_), max_rotational_vel_);
 
     geometry_msgs::Twist cmd_vel;

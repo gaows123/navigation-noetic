@@ -46,7 +46,7 @@ namespace rotate_recovery
 {
 /**
  * @class RotateRecovery
- * @brief A recovery behavior that rotates the robot in-place to attempt to clear out space
+ * @brief  恢复行为会让机器人定点旋转一圈，尝试清除调周围的障碍物
  */
 class RotateRecovery : public nav_core::RecoveryBehavior
 {
@@ -57,22 +57,22 @@ public:
   RotateRecovery();
 
   /**
-   * @brief  Initialization function for the RotateRecovery recovery behavior
+   * @brief  恢复行为的初始化函数
    * @param name Namespace used in initialization
    * @param tf (unused)
    * @param global_costmap (unused)
-   * @param local_costmap A pointer to the local_costmap used by the navigation stack
+   * @param local_costmap 指向局部代价地图的指针
    */
   void initialize(std::string name, tf2_ros::Buffer*,
                   costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap);
 
   /**
-   * @brief  Run the RotateRecovery recovery behavior.
+   * @brief  启动旋转恢复行为
    */
   void runBehavior();
 
   /**
-   * @brief  Destructor for the rotate recovery behavior
+   * @brief  析构函数
    */
   ~RotateRecovery();
 
