@@ -40,6 +40,7 @@
 #include <vector>
 
 //register this planner as a RecoveryBehavior plugin
+// 该插件将costmap中给定半径（reset_distance_默认值3.0）范围之内的区域进行清理，即将栅格状态更新为未知信息
 PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
 
 using costmap_2d::NO_INFORMATION;
@@ -56,7 +57,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     global_costmap_ = global_costmap;
     local_costmap_ = local_costmap;
 
-    //get some parameters from the parameter server
+    // 参数服务器中获得参数
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
@@ -133,6 +134,7 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
   geometry_msgs::PoseStamped pose;
 
+  // 获得机器人全局位姿
   if(!costmap->getRobotPose(pose)){
     ROS_ERROR("Cannot clear map because pose cannot be retrieved");
     return;
@@ -144,14 +146,16 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
     std::string name = plugin->getName();
+    // 返回该字符在字符串中的下标
     int slash = name.rfind('/');
+    // 如果找到匹配的
     if( slash != std::string::npos ){
         name = name.substr(slash+1);
     }
 
     if(clearable_layers_.count(name)!=0){
 
-      // check if the value is convertable
+      // 检查该layer是否来自costmap_2d::CostmapLayer
       if(!dynamic_cast<costmap_2d::CostmapLayer*>(plugin.get())){
         ROS_ERROR_STREAM("Layer " << name << " is not derived from costmap_2d::CostmapLayer");
         continue;
@@ -177,7 +181,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
   int start_x, start_y, end_x, end_y;
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
   costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
-
+  // 将特定栅格更新为未知信息
   costmap->clearArea(start_x, start_y, end_x, end_y, invert_area_to_clear_);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();

@@ -28,6 +28,7 @@ void CostmapLayer::clearArea(int start_x, int start_y, int end_x, int end_y, boo
       if((xrange && y>start_y && y<end_y)!=invert_area)
         continue;
       int index = getIndex(x,y);
+      // 将栅格更新为未知信息
       if(grid[index]!=NO_INFORMATION){
         grid[index] = NO_INFORMATION;
       }
