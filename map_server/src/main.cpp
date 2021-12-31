@@ -71,16 +71,16 @@ class MapServer
       ros::NodeHandle private_nh("~");
       private_nh.param("frame_id", frame_id_, std::string("map"));
 
-      //When called this service returns a copy of the current map
+      // 请求后返回当前地图的复制
       get_map_service_ = nh_.advertiseService("static_map", &MapServer::mapCallback, this);
 
-      //Change the currently published map
+      // 改变当前发布的地图
       change_map_srv_ = nh_.advertiseService("change_map", &MapServer::changeMapCallback, this);
 
-      // Latched publisher for metadata
+      // 发布地图的描述信息
       metadata_pub_ = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
 
-      // Latched publisher for data
+      // 发布锁存的地图消息
       map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
 
       deprecated_ = (res != 0);
@@ -299,6 +299,7 @@ class MapServer
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_server", ros::init_options::AnonymousName);
+  // step 1 : 检查rosrun map_server的命令是否正确
   ros::NodeHandle nh("~");
   if(argc != 3 && argc != 2)
   {
@@ -311,6 +312,7 @@ int main(int argc, char **argv)
   std::string fname(argv[1]);
   double res = (argc == 2) ? 0.0 : atof(argv[2]);
 
+  // step 2: 创建MapServer类对象ms，运行MapServer构造函数
   try
   {
     MapServer ms(fname, res);
