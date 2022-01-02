@@ -42,7 +42,7 @@ PLUGINLIB_EXPORT_CLASS(move_slow_and_clear::MoveSlowAndClear, nav_core::Recovery
 
 namespace move_slow_and_clear
 {
-  MoveSlowAndClear::MoveSlowAndClear():global_costmap_(NULL), local_costmap_(NULL), 
+  MoveSlowAndClear::MoveSlowAndClear():global_costmap_(NULL), local_costmap_(NULL),
                                        initialized_(false), remove_limit_thread_(NULL), limit_set_(false){}
 
   MoveSlowAndClear::~MoveSlowAndClear()
@@ -58,10 +58,15 @@ namespace move_slow_and_clear
     local_costmap_ = local_costmap;
 
     ros::NodeHandle private_nh_("~/" + n);
+    // 机器人清除范围
     private_nh_.param("clearing_distance", clearing_distance_, 0.5);
+    // 该修复行为时候限定的线速度
     private_nh_.param("limited_trans_speed", limited_trans_speed_, 0.25);
+    // 该修复行为时候限定的旋转速度
     private_nh_.param("limited_rot_speed", limited_rot_speed_, 0.45);
+    // limited_distance没有用到？
     private_nh_.param("limited_distance", limited_distance_, 0.3);
+
     private_nh_.param("max_trans_param_name", max_trans_param_name_, std::string("max_trans_vel"));
     private_nh_.param("max_rot_param_name", max_rot_param_name_, std::string("max_rot_vel"));
 
@@ -86,7 +91,7 @@ namespace move_slow_and_clear
 
     std::vector<geometry_msgs::Point> global_poly, local_poly;
     geometry_msgs::Point pt;
-
+    // 确定要清除的区域大小
     for(int i = -1; i <= 1; i+=2)
     {
       pt.x = global_pose.pose.position.x + i * clearing_distance_;
@@ -106,7 +111,7 @@ namespace move_slow_and_clear
       local_poly.push_back(pt);
     }
 
-    //clear the desired space in the costmaps
+    // 清除代价地图中特定区域
     std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = global_costmap_->getLayeredCostmap()->getPlugins();
     for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
             boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
@@ -116,7 +121,7 @@ namespace move_slow_and_clear
             costmap->setConvexPolygonCost(global_poly, costmap_2d::FREE_SPACE);
           }
     }
-     
+
     plugins = local_costmap_->getLayeredCostmap()->getPlugins();
     for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
             boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
@@ -125,14 +130,15 @@ namespace move_slow_and_clear
             costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             costmap->setConvexPolygonCost(local_poly, costmap_2d::FREE_SPACE);
           }
-    } 
+    }
 
-    //lock... just in case we're already speed limited
+    // 加锁保护
     boost::mutex::scoped_lock l(mutex_);
 
-    //get the old maximum speed for the robot... we'll want to set it back
+    // 获得上个阶段的最大速度
     if(!limit_set_)
     {
+      // 如果之前没有限制速度
       if(!planner_nh_.getParam(max_trans_param_name_, old_trans_speed_))
       {
         ROS_ERROR("The planner %s, does not have the parameter %s", planner_nh_.getNamespace().c_str(), max_trans_param_name_.c_str());
@@ -144,7 +150,7 @@ namespace move_slow_and_clear
       }
     }
 
-    //we also want to save our current position so that we can remove the speed limit we impose later on
+    //we also want to save our current position so that we can remove the speed limit we impose later on 存储当前位置
     speed_limit_pose_ = global_pose;
 
     //limit the speed of the robot until it moves a certain distance
