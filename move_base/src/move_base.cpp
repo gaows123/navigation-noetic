@@ -1006,7 +1006,7 @@ namespace move_base {
           // 判断控制有没有超时
           if(ros::Time::now() > attempt_end){
             //we'll move into our obstacle clearing mode
-            // 进入障碍物清除模式
+            // 进入障碍物清除模式(恢复行为)
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
@@ -1185,7 +1185,7 @@ namespace move_base {
     return true;
   }
 
-  //we'll load our default recovery behaviors here
+  // 加载默认的恢复行为
   void MoveBase::loadDefaultRecoveryBehaviors(){
     recovery_behaviors_.clear();
     try{
@@ -1194,13 +1194,13 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
-      //first, we'll load a recovery behavior to clear the costmap
+      // 首先加载清除代价地图的恢复行为
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behavior_names_.push_back("conservative_reset");
       recovery_behaviors_.push_back(cons_clear);
 
-      //next, we'll load a recovery behavior to rotate in place
+      // 接着加载原地旋转的恢复行为
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
@@ -1208,13 +1208,13 @@ namespace move_base {
         recovery_behaviors_.push_back(rotate);
       }
 
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+      // 然后加载比较主动积极的代价地图重置行为
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behavior_names_.push_back("aggressive_reset");
       recovery_behaviors_.push_back(ags_clear);
 
-      //we'll rotate in-place one more time
+      // 再来一次原地旋转
       if(clearing_rotation_allowed_){
         recovery_behaviors_.push_back(rotate);
         recovery_behavior_names_.push_back("rotate_recovery");
@@ -1228,19 +1228,17 @@ namespace move_base {
   }
 
   void MoveBase::resetState(){
-    // Disable the planner thread
+    // 关闭全局规划线程
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     runPlanner_ = false;
     lock.unlock();
 
-    // Reset statemachine
     // 重置状态机并停止机器人运动
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
-    //if we shutdown our costmaps when we're deactivated... we'll do that now
     // 关闭代价地图
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps");

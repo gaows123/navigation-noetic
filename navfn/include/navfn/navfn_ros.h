@@ -51,105 +51,105 @@
 namespace navfn {
   /**
    * @class NavfnROS
-   * @brief Provides a ROS wrapper for the navfn planner which runs a fast, interpolated navigation function on a costmap.
+   * @brief  Navfn 全局规划器的ROS封装类
    */
   class NavfnROS : public nav_core::BaseGlobalPlanner {
     public:
       /**
-       * @brief  Default constructor for the NavFnROS object
+       * @brief NavFnROS对象的默认构造函数
        */
       NavfnROS();
 
       /**
-       * @brief  Constructor for the NavFnROS object
-       * @param  name The name of this planner
-       * @param  costmap A pointer to the ROS wrapper of the costmap to use
+       * @brief  NavFnROS对象的构造函数
+       * @param  name 全局规划器名字
+       * @param  costmap 代价地图的指针
        */
       NavfnROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Constructor for the NavFnROS object
-       * @param  name The name of this planner
-       * @param  costmap A pointer to the costmap to use
-       * @param  global_frame The global frame of the costmap
+       * @brief  还是NavFnROS对象的构造函数
+       * @param  name 全局规划器名字
+       * @param  costmap  代价地图的指针
+       * @param  global_frame 代价地图的全局坐标系
        */
       NavfnROS(std::string name, costmap_2d::Costmap2D* costmap, std::string global_frame);
 
       /**
-       * @brief  Initialization function for the NavFnROS object
-       * @param  name The name of this planner
-       * @param  costmap A pointer to the ROS wrapper of the costmap to use for planning
+       * @brief  NavFnROS 对象的初始化函数
+       * @param  name 全局规划器名字
+       * @param  costmap 代价地图的指针
        */
       void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Initialization function for the NavFnROS object
-       * @param  name The name of this planner
-       * @param  costmap A pointer to the costmap to use for planning
-       * @param  global_frame The global frame of the costmap
+       * @brief  avFnROS 对象的初始化函数
+       * @param  name 全局规划器名字
+       * @param  costmap 代价地图的指针
+       * @param  global_frame 代价地图的全局坐标系
        */
       void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string global_frame);
 
       /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
-       * @param plan The plan... filled by the planner
-       * @return True if a valid plan was found, false otherwise
+       * @brief  根据目标位姿计算全局路径
+       * @param start 起始位姿
+       * @param goal 目标位姿
+       * @param plan 计算出的全局路径
+       * @return True 代表找到全局路径
        */
-      bool makePlan(const geometry_msgs::PoseStamped& start, 
+      bool makePlan(const geometry_msgs::PoseStamped& start,
           const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
-       * @param tolerance The tolerance on the goal point for the planner
-       * @param plan The plan... filled by the planner
-       * @return True if a valid plan was found, false otherwise
+       * @brief 根据目标位姿计算全局路径
+       * @param start 起始位姿
+       * @param goal 目标位姿
+       * @param tolerance 目标点的容忍误差
+       * @param plan 计算出的全局路径
+       * @return True 代表找到全局路径
        */
-      bool makePlan(const geometry_msgs::PoseStamped& start, 
+      bool makePlan(const geometry_msgs::PoseStamped& start,
           const geometry_msgs::PoseStamped& goal, double tolerance, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
-       * @brief  Computes the full navigation function for the map given a point in the world to start from
-       * @param world_point The point to use for seeding the navigation function 
-       * @return True if the navigation function was computed successfully, false otherwise
+       * @brief  计算全局地图的导航函数，从已知的起始点到目标点
+       * @param world_point The point to use for seeding the navigation function
+       * @return True 代表 navigation function 成功的计算出来
        */
       bool computePotential(const geometry_msgs::Point& world_point);
 
       /**
-       * @brief Compute a plan to a goal after the potential for a start point has already been computed (Note: You should call computePotential first)
-       * @param goal The goal pose to create a plan to
-       * @param plan The plan... filled by the planner
-       * @return True if a valid plan was found, false otherwise
+       * @brief 当起始点的potential被计算出来后，计算全局路径  (注意: 要先调用 computePotential)
+       * @param goal 目标点位姿
+       * @param plan 计算出的全局路径
+       * @return True 代表找到全局路径
        */
       bool getPlanFromPotential(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
-       * @brief Get the potential, or naviagation cost, at a given point in the world (Note: You should call computePotential first)
-       * @param world_point The point to get the potential for 
-       * @return The navigation function's value at that point in the world
+       * @brief 获得 potential 或者 导航的代价  (注意: 要先调用 computePotential)
+       * @param world_point 被检查的点
+       * @return 该点在navigation function的值 （全局坐标系下）
        */
       double getPointPotential(const geometry_msgs::Point& world_point);
 
       /**
-       * @brief Check for a valid potential value at a given point in the world (Note: You should call computePotential first)
-       * @param world_point The point to get the potential for 
-       * @return True if the navigation function is valid at that point in the world, false otherwise
+       * @brief 检查potential值是否有效 (注意: 要先调用 computePotential)
+       * @param world_point 被检查的点
+       * @return True 代表 navigation function 在该点是有效的
        */
       bool validPointPotential(const geometry_msgs::Point& world_point);
 
       /**
-       * @brief Check for a valid potential value at a given point in the world (Note: You should call computePotential first)
-       * @param world_point The point to get the potential for 
-       * @param tolerance The tolerance on searching around the world_point specified
-       * @return True if the navigation function is valid at that point in the world, false otherwise
+       * @brief 检查potential值是否有效 (注意: 要先调用 computePotential)
+       * @param world_point 被检查的点
+       * @param tolerance  在world_point附近搜索的容忍误差
+       * @return True 代表 navigation function 在该点是有效的
        */
       bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
 
       /**
-       * @brief  Publish a path for visualization purposes
+       * @brief 可视化路径
        */
       void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, double r, double g, double b, double a);
 

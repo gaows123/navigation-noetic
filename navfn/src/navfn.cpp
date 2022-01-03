@@ -409,8 +409,8 @@ namespace navfn {
 
       // step 3: 初始化一些用于迭代更新potarr的数据，并初始化pending数组为全0，设置所有的cell状态都为非等待状态。
       // 优先级缓冲
-      curT = COST_OBS; //当前传播阈值
-      curP = pb1; //当前用于传播的cell索引数组
+      curT = COST_OBS; // 传播阈值设为254
+      curP = pb1; // 当前用于传播的cell索引数组
       curPe = 0; //当前用于传播的cell的数量
       nextP = pb2; //用于下个传播过程的cell索引数组
       nextPe = 0; //用于下个传播过程的cell的数量
@@ -458,11 +458,11 @@ namespace navfn {
 
 #define INVSQRT2 0.707106781
 
-  // updateCell用于更新单个cell的Potential值，先获取当前cell四周邻点的potarr值，并取最小的值存入ta。
+  // updateCell用于更新某个单元格(cell) 的Potential值，先获取当前cell四周邻点的potential值，并取最小的值存入ta。
   inline void
     NavFn::updateCell(int n)
     {
-      // 获得邻点
+      // 获得邻点的potential
       float u,d,l,r;
       l = potarr[n-1];
       r = potarr[n+1];
@@ -472,28 +472,26 @@ namespace navfn {
       //	 potarr[n], l, r, u, d);
       //  ROS_INFO("[Update] cost: %d\n", costarr[n]);
 
-      // find lowest, and its lowest neighbor
+      // 找到最小potential的单元格 ta, 和最小potential的相邻单元格 tc
       float ta, tc;
       if (l<r) tc=l; else tc=r;
       if (u<d) ta=u; else ta=d;
 
-      // 下面执行一个判断，只有当当前cell不是致命障碍物时，才由它向四周传播，否则到它后停止，不传播。
-      // do planar wave update
+      // 如果当前单元格不是致命障碍物，则四周传播，否则到它后停止，不传播。
       if (costarr[n] < COST_OBS)	// 不要传播到了障碍物那边了
       {
-        float hf = (float)costarr[n]; // traversability factor
-        float dc = tc-ta;		// relative cost between ta,tc
-        if (dc < 0) 		// ta is lowest
+        float hf = (float)costarr[n]; // traversability factor 描述传播能力的因子
+        float dc = tc-ta;		// ta 和 tc 的代价值差
+        if (dc < 0)
         {
           dc = -dc;
-          ta = tc;
+          ta = tc;  // 设置ta为最小的
         }
 
         // 只有当前cell的Potential计算值<原本的Potential值，才更新，这意味着从目标点开始，
         // 它的Potential值被初始化为0，不会被更新，接下来传播到它的四个邻点，才会开始更新他们的Potential值。
-        // calculate new potential
         float pot;
-        if (dc >= hf)		// if too large, use ta-only update
+        if (dc >= hf)		// ta 和 tc 的代价值差如果太大, use ta-only update
           pot = ta+hf;
         else			// two-neighbor interpolation update
         {
@@ -507,7 +505,7 @@ namespace navfn {
 
         //      ROS_INFO("[Update] new pot: %d\n", costarr[n]);
 
-        // now add affected neighbors to priority blocks
+        // now add affected neighbors to priority blocks 当前单元格的potential比之前的小，则更新
         if (pot < potarr[n])
         {
           float le = INVSQRT2*(float)costarr[n-1];
@@ -515,14 +513,14 @@ namespace navfn {
           float ue = INVSQRT2*(float)costarr[n-nx];
           float de = INVSQRT2*(float)costarr[n+nx];
           potarr[n] = pot;
-          if (pot < curT)	// low-cost buffer block
+          if (pot < curT)	// 如果当前单元格potential小于curT,放入代价的缓冲区域
           {
             if (l > pot+le) push_next(n-1);
             if (r > pot+re) push_next(n+1);
             if (u > pot+ue) push_next(n-nx);
             if (d > pot+de) push_next(n+nx);
           }
-          else			// overflow block
+          else			// 如果当前单元格potential大于curT，放入overflow block
           {
             if (l > pot+le) push_over(n-1);
             if (r > pot+re) push_over(n+1);

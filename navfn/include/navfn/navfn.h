@@ -47,9 +47,9 @@
 #include <stdio.h>
 
 // cost defs
-#define COST_UNKNOWN_ROS 255		// 255 is unknown cost
-#define COST_OBS 254		// 254 for forbidden regions
-#define COST_OBS_ROS 253	// ROS values of 253 are obstacles
+#define COST_UNKNOWN_ROS 255		// 255 位置信息
+#define COST_OBS 254		// 254 禁止区域
+#define COST_OBS_ROS 253	// 253是ROS的障碍物代价值
 
 // navfn cost values are set to
 // COST_NEUTRAL + COST_FACTOR * costmap_cost_value.
@@ -101,17 +101,17 @@ positions at about 1/2 cell resolution; else returns 0.
 
   /**
    * @class NavFn
-   * @brief Navigation function class. Holds buffers for costmap, navfn map. Maps are pixel-based. Origin is upper left, x is right, y is down.
+   * @brief Navigation function class. Holds buffers for costmap, navfn map.代价地图和NavFn地图是基于像素的，他们的原点在左上方，x 轴向右，y 轴向下
    */
   class NavFn
   {
     public:
       /**
-       * @brief  Constructs the planner
-       * @param nx The x size of the map
-       * @param ny The y size of the map
+       * @brief  构造全局规划器
+       * @param nx 地图x轴方向的大小
+       * @param ny 地图y轴方向的大小
        */
-      NavFn(int nx, int ny);	// size of map
+      NavFn(int nx, int ny);	// 地图大小
 
       ~NavFn();
 
@@ -166,20 +166,20 @@ positions at about 1/2 cell resolution; else returns 0.
        */
       float getLastPathCost();      /**< Return cost of path found the last time A* was called */
 
-      /** cell arrays */
-      COSTTYPE *costarr;		/**< cost array in 2D configuration space */
-      float   *potarr;		/**< potential array, navigation function potential */
-      bool    *pending;		/**< pending cells during propagation */
-      int nobs;			/**< number of obstacle cells */
+      /** 几个重要的数组 */
+      COSTTYPE *costarr;		/**< 2D空间的代价数组 */
+      float   *potarr;		/**< potential的数组， navigation function potential */
+      bool    *pending;		/**< 传播时的pending cells */
+      int nobs;			/**< 障碍物单元格的数量 */
 
       /** block priority buffers */
-      int *pb1, *pb2, *pb3;		/**< storage buffers for priority blocks */
-      int *curP, *nextP, *overP;	/**< priority buffer block ptrs */
-      int curPe, nextPe, overPe; /**< end points of arrays */
+      int *pb1, *pb2, *pb3;		/**<  priority blocks 的缓冲存储 */
+      int *curP, *nextP, *overP;	/**< priority buffer block 指针 */
+      int curPe, nextPe, overPe; /**< curP, nextP, overP 数组的最后一个点 */
 
       /** block priority thresholds */
-      float curT;			/**< 当前传播阈值 current threshold */
-      float priInc;			/**< priority threshold increment */
+      float curT;			/**< 当前传播阈值 */
+      float priInc;			/**< priority 阈值增量 */
 
       /** goal and start positions */
       /**
