@@ -31,7 +31,7 @@
 
 namespace global_planner {
 float QuadraticCalculator::calculatePotential(float* potential, unsigned char cost, int n, float prev_potential) {
-    // get neighbors
+    // 获得邻点的potential
     float u, d, l, r;
     l = potential[n - 1];
     r = potential[n + 1];
@@ -41,7 +41,7 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
     //     potential[n], l, r, u, d);
     //  ROS_INFO("[Update] cost: %d\n", costs[n]);
 
-    // find lowest, and its lowest neighbor 找到最低的，以及它的最低邻居
+    // 找到最小的potential，以及它相邻点的最小potential
     float ta, tc;
     if (l < r)
         tc = l;
@@ -52,16 +52,16 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
     else
         ta = d;
 
-    float hf = cost; // traversability factor 可通行的因子
-    float dc = tc - ta;        // ta和tc之间的相对代价
-    if (dc < 0)         // tc is lowest tc是最低的
-            {
+    float hf = cost; // 描述可通行性的因子
+    float dc = tc - ta;        // tc和tc之间的代价之差
+    if (dc < 0)         // 设置ta为最小的
+    {
         dc = -dc;
         ta = tc;
     }
 
-    // calculate new potential 计算新的势场
-    if (dc >= hf)        // if too large, use ta-only update 如果太多，只用ta更新
+    // 计算新的potential, 方法二选一
+    if (dc >= hf)        // ta 和 tc 的代价值差如果太大, 只用ta更新
         return ta + hf;
     else            // two-neighbor interpolation update
     {

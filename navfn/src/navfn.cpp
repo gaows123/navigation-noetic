@@ -480,7 +480,7 @@ namespace navfn {
       // 如果当前单元格不是致命障碍物，则四周传播，否则到它后停止，不传播。
       if (costarr[n] < COST_OBS)	// 不要传播到了障碍物那边了
       {
-        float hf = (float)costarr[n]; // traversability factor 描述传播能力的因子
+        float hf = (float)costarr[n]; // traversability factor 描述可通行性的因子
         float dc = tc-ta;		// ta 和 tc 的代价值差
         if (dc < 0)
         {
@@ -627,14 +627,7 @@ namespace navfn {
 
 
 
-  //
-  // main propagation function 主要的传播函数
-  // Dijkstra method, breadth-first 广度优先
-  // runs for a specified number of cycles,
-  //   or until it runs out of cells to update,
-  //   or until the Start cell is found (atStart = true)
-  //
-
+  // propNavFnDijkstra是主要的传播函数，Dijkstra算法，一个广度优先算法， 运行cycles次或者直到所以的单元格被更新或者起始单元格已经被找到 (atStart = true)
   bool
     NavFn::propNavFnDijkstra(int cycles, bool atStart)
     {
