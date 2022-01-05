@@ -108,7 +108,7 @@ namespace base_local_planner {
       count = 0;
       count_valid = 0;
       TrajectorySampleGenerator* gen_ = *loop_gen;
-      // 根据是否还有速度采样没算，检查是否还有轨迹
+      // 检查是否还有轨迹
       while (gen_->hasMoreTrajectories()) {
         // 生成下一个轨迹。此处调用的是轨迹生成器的函数，前面的生成轨迹的依据的采样速度已经生成
         gen_success = gen_->nextTrajectory(loop_traj);

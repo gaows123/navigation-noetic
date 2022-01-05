@@ -315,7 +315,7 @@ namespace dwa_local_planner {
 
     // 通过采样和样本打分来找到最优轨迹
     std::vector<base_local_planner::Trajectory> all_explored;
-    // 发现最优路径。result_traj_就是最优路径，all_explored就是所有的路径是为了显示
+    // 找出最优路径。result_traj_就是最优路径，all_explored是所有路径的表示
     scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
 
     if(publish_traj_pc_)
@@ -360,9 +360,9 @@ namespace dwa_local_planner {
         traj_cloud_pub_.publish(traj_cloud);
     }
 
-    // verbose publishing of point clouds
+    // 发布点云
     if (publish_cost_grid_pc_) {
-      //we'll publish the visualization of the costs to rviz before returning our best trajectory
+      // 在返回最优局部路径之前，rviz中代价的可视化
       map_viz_.publishCostCloud(planner_util_->getCostmap());
     }
 

@@ -405,6 +405,7 @@ namespace base_local_planner {
 
     std::vector<geometry_msgs::PoseStamped> local_plan;
     geometry_msgs::PoseStamped global_pose;
+    // 获得机器人当前位姿
     if (!costmap_ros_->getRobotPose(global_pose)) {
       return false;
     }
@@ -416,7 +417,7 @@ namespace base_local_planner {
       return false;
     }
 
-    //now we'll prune the plan based on the position of the robot 根据机器人的当前位置修剪全局路径
+    // 根据机器人的当前位置修剪全局路径,去除走过的路径
     if(prune_plan_)
       prunePlan(global_pose, transformed_plan, global_plan_);
 
@@ -446,7 +447,6 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
-    //check to see if we've reached the goal position
     // 检查是否已经到了目标点位置
     if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
 
