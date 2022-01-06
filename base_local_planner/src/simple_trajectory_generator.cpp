@@ -63,7 +63,7 @@ void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& goal,
     base_local_planner::LocalPlannerLimits* limits,
     const Eigen::Vector3f& vsamples,
-    bool discretize_by_time) { //注意discretize_by_time这个参数，如果该参数为1.则生成的轨迹是以共同时间的，为0，则是以共同长度的
+    bool discretize_by_time) { // discretize_by_time: true则生成的轨迹是以等时间步长，false 则是基于等距离步长
   /*
    * We actually generate all velocity sample vectors here, from which to generate trajectories later on
    */
@@ -209,12 +209,10 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
   }
   // 确定仿真步数
   int num_steps;
-  if (discretize_by_time_) {
-    // 使用全程的仿真模拟时间（--上面生成速度时亦是使用了该时间），以此确定积分步数
+  if (discretize_by_time_) { // 生成的轨迹是基于等时间步长
     num_steps = ceil(sim_time_ / sim_granularity_);
   } else {
-    //compute the number of steps we must take along this trajectory to be "safe"
-    // 如果没用discretize_by_time_，求步数num_steps
+    // 生成的轨迹是基于等距离步长， 计算步数num_steps
     double sim_time_distance = vmag * sim_time_; // 由当前速度推出在sim_time_内走过的距离
     double sim_time_angle = fabs(sample_target_vel[2]) * sim_time_; // 由当前速度推出在sim_time_内转过的角度
     num_steps =
@@ -232,7 +230,6 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
 
   Eigen::Vector3f loop_vel;
   if (continued_acceleration_) {  // 对loop_vel进行初始化
-    // 假设第一个周期的速度是要存储的局部路径对象
     // use_dwa==false，则采用连续加速的策略
     // 即仿真出的轨迹中不同点对应的速度是变化的，此时将轨迹中保存的对应速度设为基于当前速度第一次加速出的速度。
     // 否则，轨迹中的各个点为同样的速度，即sample_target_vel，此时轨迹中保存的速度也是该速度
@@ -248,10 +245,10 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     traj.thetav_ = sample_target_vel[2];
   }
 
-  //simulate the trajectory and check for collisions, updating costs along the way
+  // 推算局部路径，为了之后碰撞检测和更新路径代价
   for (int i = 0; i < num_steps; ++i) {
 
-    // 给路径加点方便之后可以画出来
+    // 把单个路径点放到局部路径traj中
     traj.addPoint(pos[0], pos[1], pos[2]); // 对轨迹的位置点的位姿进行添加
 
     if (continued_acceleration_) {

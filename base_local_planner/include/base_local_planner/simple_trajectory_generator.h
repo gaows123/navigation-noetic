@@ -150,7 +150,6 @@ protected:
   Eigen::Vector3f pos_;
   Eigen::Vector3f vel_;
 
-  // whether velocity of trajectory changes over time or not
   // 局部轨迹的速度是否随着时间变化
   bool continued_acceleration_;
   bool discretize_by_time_;
