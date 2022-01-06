@@ -154,14 +154,14 @@ void SimpleTrajectoryGenerator::setParameters(
 }
 
 /**
- * Whether this generator can create more trajectories
+ * 产生器是否可以生成多个局部路径
  */
 bool SimpleTrajectoryGenerator::hasMoreTrajectories() {
   return next_sample_index_ < sample_params_.size();
 }
 
 /**
- * Create and return the next sample trajectory
+ * 产生和返回下个采样局部路径
  */
 bool SimpleTrajectoryGenerator::nextTrajectory(Trajectory &comp_traj) {
   bool result = false;

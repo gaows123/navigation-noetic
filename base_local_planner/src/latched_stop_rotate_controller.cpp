@@ -85,18 +85,17 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
 
   base_local_planner::LocalPlannerLimits limits = planner_util->getCurrentLimits();
 
-  //check to see if we've reached the goal position
+  // 检查机器人是否已经到了目标点的位置
   if ((latch_xy_goal_tolerance_ && xy_tolerance_latch_) ||
       base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {
-    //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
-    //just rotate in place
+    // 如果机器人到了目标点位置，接下来只需要旋转对齐
     if (latch_xy_goal_tolerance_ && ! xy_tolerance_latch_) {
       ROS_DEBUG("Goal position reached (check), stopping and turning in place");
       xy_tolerance_latch_ = true;
     }
     double goal_th = tf2::getYaw(goal_pose.pose.orientation);
     double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
-    //check to see if the goal orientation has been reached
+    // 检查目标点朝向是否对齐了
     if (fabs(angle) <= limits.yaw_goal_tolerance) {
       //make sure that we're actually stopped before returning success
       if (base_local_planner::stopped(base_odom, theta_stopped_vel, trans_stopped_vel)) {
@@ -117,20 +116,20 @@ bool LatchedStopRotateController::stopWithAccLimits(const geometry_msgs::PoseSta
                           Eigen::Vector3f vel_samples)> obstacle_check) {
 
   //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
-  //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
+  //but we'll use a tenth of a second to be consistent with the implementation of the local planner. 用最大减速度来减速，
   double vx = sign(robot_vel.pose.position.x) * std::max(0.0, (fabs(robot_vel.pose.position.x) - acc_lim[0] * sim_period));
   double vy = sign(robot_vel.pose.position.y) * std::max(0.0, (fabs(robot_vel.pose.position.y) - acc_lim[1] * sim_period));
 
   double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
   double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim[2] * sim_period));
 
-  //we do want to check whether or not the command is valid
+  // 检查下发命令是否有效
   double yaw = tf2::getYaw(global_pose.pose.orientation);
   bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.pose.position.x, global_pose.pose.position.y, yaw),
                                   Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
                                   Eigen::Vector3f(vx, vy, vth));
 
-  //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
+  // 如果下发命令有效，传递给cmd_vel,不然下发零速度
   if(valid_cmd){
     ROS_DEBUG_NAMED("latched_stop_rotate", "Slowing down... using vx, vy, vth: %.2f, %.2f, %.2f", vx, vy, vth);
     cmd_vel.linear.x = vx;
