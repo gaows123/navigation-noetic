@@ -163,13 +163,13 @@ bool LatchedStopRotateController::rotateToGoal(
 
   double v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, fabs(ang_diff)));
 
-  //take the acceleration limits of the robot into account
+  // 把机器人的加速度限制考虑在内
   double max_acc_vel = fabs(vel_yaw) + acc_lim[2] * sim_period;
   double min_acc_vel = fabs(vel_yaw) - acc_lim[2] * sim_period;
 
   v_theta_samp = std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
 
-  //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
+  //  计算一个下发速度，能够让机器人在终点停下来
   double max_speed_to_stop = sqrt(2 * acc_lim[2] * fabs(ang_diff));
   v_theta_samp = std::min(max_speed_to_stop, fabs(v_theta_samp));
 
@@ -179,7 +179,7 @@ bool LatchedStopRotateController::rotateToGoal(
     v_theta_samp = - v_theta_samp;
   }
 
-  //we still want to lay down the footprint of the robot and check if the action is legal
+  //we still want to lay down the footprint of the robot and check if the action is legal 该函数的功能实现是checkTrajectory，用来检测该动作是否有效
   bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.pose.position.x, global_pose.pose.position.y, yaw),
       Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
       Eigen::Vector3f( 0.0, 0.0, v_theta_samp));
