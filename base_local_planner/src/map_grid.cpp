@@ -174,7 +174,7 @@ namespace base_local_planner{
 
     bool started_path = false;
 
-    queue<MapCell*> path_dist_queue;
+    queue<MapCell*> path_dist_queue; // 路径长度的队列
 
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
@@ -218,7 +218,7 @@ namespace base_local_planner{
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
 
-    // skip global path points until we reach the border of the local map
+    //  依次遍历路径点，直到局部地图的边缘或者最后一个点
     for (unsigned int i = 0; i < adjusted_global_plan.size(); ++i) {
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
@@ -228,7 +228,7 @@ namespace base_local_planner{
         local_goal_y = map_y;
         started_path = true;
       } else {
-        if (started_path) {
+        if (started_path) { // 路径起始点在局部地图中，但是后面的点有的不在
           break;
         }// else we might have a non pruned path, so we just continue
       }

@@ -58,7 +58,7 @@ void OscillationCostFunction::updateOscillationFlags(Eigen::Vector3f pos, base_l
     if (setOscillationFlags(traj, min_vel_trans)) {
       prev_stationary_pos_ = pos;
     }
-    //if we've got restrictions... check if we can reset any oscillation flags
+    // 如果有一些运动限制，检查哪些震荡标志位需要被重置
     if(forward_pos_only_ || forward_neg_only_
         || strafe_pos_only_ || strafe_neg_only_
         || rot_pos_only_ || rot_neg_only_){
@@ -74,7 +74,7 @@ void OscillationCostFunction::resetOscillationFlagsIfPossible(const Eigen::Vecto
 
   double th_diff = pos[2] - prev[2];
 
-  //if we've moved far enough... we can reset our flags
+  // 如果位姿的变化足够大，重置震荡标志位
   if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
       fabs(th_diff) > oscillation_reset_angle_) {
     resetOscillationFlags();
@@ -100,7 +100,7 @@ void OscillationCostFunction::resetOscillationFlags() {
 
 bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans) {
   bool flag_set = false;
-  //set oscillation flags for moving forward and backward
+  // 为前后向运动设置震荡标准位
   if (t->xv_ < 0.0) {
     if (forward_pos_) {
       forward_neg_only_ = true;
@@ -118,7 +118,7 @@ bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory
     forward_pos_ = true;
   }
 
-  //we'll only set flags for strafing and rotating when we're not moving forward at all
+  // 当机器人不向前运动是，只为惩罚和旋转设置标志位
   if (fabs(t->xv_) <= min_vel_trans) {
     //check negative strafe
     if (t->yv_ < 0) {
