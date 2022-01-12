@@ -477,17 +477,15 @@ namespace move_base {
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
-    //make sure to set the plan to be empty initially
     // 清空路径
     plan.clear();
 
-    //since this gets called on handle activate
+    // 如果没有全局代价地图，返回false
     if(planner_costmap_ros_ == NULL) {
       ROS_ERROR("Planner costmap ROS is NULL, unable to create global plan");
       return false;
     }
 
-    //get the starting pose of the robot
     // 获取机器人的起始位姿
     geometry_msgs::PoseStamped global_pose;
     if(!getRobotPose(global_pose, planner_costmap_ros_)) {
@@ -497,7 +495,7 @@ namespace move_base {
 
     const geometry_msgs::PoseStamped& start = global_pose;
 
-    //if the planner fails or returns a zero length plan, planning failed
+    // 如果全局规划器失败了或者返回了一个零长度的路径，规划失败
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
       return false;
@@ -515,8 +513,7 @@ namespace move_base {
   }
 
   bool MoveBase::isQuaternionValid(const geometry_msgs::Quaternion& q){
-    //first we need to check if the quaternion has nan's or infs
-    // 先检查四元数的值有没有非法值或者无穷大的值
+    // 先检查四元数的值有没有非法值(nan)或者无穷大的值(inf)
     if(!std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z) || !std::isfinite(q.w)){
       ROS_ERROR("Quaternion has nans or infs... discarding as a navigation goal");
       return false;
@@ -524,14 +521,12 @@ namespace move_base {
 
     tf2::Quaternion tf_q(q.x, q.y, q.z, q.w);
 
-    //next, we need to check if the length of the quaternion is close to zero
     // 接下来检查四元数的长度是不是趋于零
     if(tf_q.length2() < 1e-6){
       ROS_ERROR("Quaternion has length close to zero... discarding as navigation goal");
       return false;
     }
 
-    //next, we'll normalize the quaternion and check that it transforms the vertical vector correctly
     // 归一化四元数
     tf_q.normalize();
 
@@ -581,10 +576,8 @@ namespace move_base {
     bool wait_for_wake = false;
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     while(n.ok()){
-      //check if we should run the planner (the mutex is locked)
       // 确认是否要运行路径规划器(这里已经加锁)
       while(wait_for_wake || !runPlanner_){
-        //if we should not be running the planner then suspend this thread
         // 暂时关闭路径规划线程
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
       // 注意planner_cond_.wait(lock)是在等待条件满足。
@@ -600,7 +593,6 @@ namespace move_base {
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
-      //run planner
       // 运行路径规划器，它的主要函数是makePlan
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
@@ -646,7 +638,6 @@ namespace move_base {
         // 或者得到路径但计算不出下一步控制时重新进行路径规划
         if(runPlanner_ &&
            (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
-          //we'll move into our obstacle clearing mode
           // 进入障碍物清理模式
           state_ = CLEARING;
           runPlanner_ = false;  // proper solution for issue #523
@@ -657,10 +648,9 @@ namespace move_base {
         lock.unlock();
       }
 
-      //take the mutex for the next iteration 加锁，下次循环中解锁
+      // 加锁，下次循环中解锁
       lock.lock();
 
-      // setup sleep interface if needed
       // 如果还没到规划周期则定时器睡眠，在定时器中断中通过planner_cond_唤醒，这里规划周期为0
       if(planner_frequency_ > 0){
         ros::Duration sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
@@ -783,11 +773,10 @@ namespace move_base {
       if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
 
-        //we want to go back to the planning state for the next execution cycle
+        // 进入planning状态，准备下个执行周期
         recovery_index_ = 0;
         state_ = PLANNING;
 
-        //we have a new goal so make sure the planner is awake
         // 有了新的目标点，所以需要确认路径规划器是唤醒的
         lock.lock();
         planner_goal_ = goal;
@@ -795,7 +784,6 @@ namespace move_base {
         planner_cond_.notify_one();
         lock.unlock();
 
-        //publish the goal point to the visualizer
         // 发布目标点给rviz
         ROS_DEBUG_NAMED("move_base","The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
         current_goal_pub_.publish(goal);
@@ -1164,13 +1152,13 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
-      // 首先加载清除代价地图的恢复行为
+      // step 1 加载清除代价地图的恢复行为
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behavior_names_.push_back("conservative_reset");
       recovery_behaviors_.push_back(cons_clear);
 
-      // 接着加载原地旋转的恢复行为
+      // step 2 加载原地旋转的恢复行为
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
@@ -1178,13 +1166,13 @@ namespace move_base {
         recovery_behaviors_.push_back(rotate);
       }
 
-      // 然后加载比较主动积极的代价地图重置行为
+      // step 3 加载比较主动积极的代价地图重置行为
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behavior_names_.push_back("aggressive_reset");
       recovery_behaviors_.push_back(ags_clear);
 
-      // 再来一次原地旋转
+      // step 4 再来一次原地旋转
       if(clearing_rotation_allowed_){
         recovery_behaviors_.push_back(rotate);
         recovery_behavior_names_.push_back("rotate_recovery");
