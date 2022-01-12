@@ -214,18 +214,18 @@ namespace move_base {
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
       pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
-      // set up plan triple buffer
-      // 一般保存规划器中刚刚算出的路径，然后将其给latest_plan_
+      // 保存规划器中刚刚算出的路径，然后传递planner_plan_ --> latest_plan_ --> controller_plan_
       std::vector<geometry_msgs::PoseStamped>* planner_plan_;
       //作为一个桥梁，在MoveBase::executeCycle中传递给controller_plan_
       std::vector<geometry_msgs::PoseStamped>* latest_plan_;
       std::vector<geometry_msgs::PoseStamped>* controller_plan_;
 
-      // set up the planner's thread
+      // 全局规划线程相关的变量
       bool runPlanner_;
       // boost的一种结合了互斥锁的用法，可以使一个线程进入睡眠状态，然后在另一个线程触发唤醒。
       boost::recursive_mutex planner_mutex_;
       // 通过这个值将goal在MoveBase::executeCb与MoveBase::planThread()之间传递
+      // boost::condition_variable_any用来实现多线程同步，它必须与互斥量配合使用。
       boost::condition_variable_any planner_cond_;
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
