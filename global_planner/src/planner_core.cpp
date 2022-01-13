@@ -368,16 +368,17 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     plan.clear();
 
     std::vector<std::pair<float, float> > path;
-
+    // 这个path的点只有在map中的位置信息(x,y)
     if (!path_maker_->getPath(potential_array_, start_x, start_y, goal_x, goal_y, path)) {
         ROS_ERROR("NO PATH!");
         return false;
     }
 
     ros::Time plan_time = ros::Time::now();
+    // 将path中每个点转换到world下，再加入方向信息，依次存储到plan中
     for (int i = path.size() -1; i>=0; i--) {
         std::pair<float, float> point = path[i];
-        // 把map的全局路径转换到世界坐标系下
+        // 把map的全局路径转换到world下
         double world_x, world_y;
         mapToWorld(point.first, point.second, world_x, world_y);
 

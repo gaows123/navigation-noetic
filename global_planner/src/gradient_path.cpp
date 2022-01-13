@@ -69,16 +69,17 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
     std::pair<float, float> current;
     int stc = getIndex(goal_x, goal_y);
 
-    // set up offset
+    // step xx 获得x,y 在目标点的差值和单元格总数
     float dx = goal_x - (int)goal_x;
     float dy = goal_y - (int)goal_y;
     int ns = xs_ * ys_;
+    // memset是以字节为单位，初始化内存块
     memset(gradx_, 0, ns * sizeof(float));
     memset(grady_, 0, ns * sizeof(float));
 
     int c = 0;
     while (c++<ns*4) {
-        // check if near goal
+        // step xx 检查是否已经靠近起始点了
         double nx = stc % xs_ + dx, ny = stc / xs_ + dy;
 
         if (fabs(nx - start_x) < .5 && fabs(ny - start_y) < .5) {
@@ -87,8 +88,8 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
             path.push_back(current);
             return true;
         }
-
-        if (stc < xs_ || stc > xs_ * ys_ - xs_) // would be out of bounds
+        // step xx 检查是否有越界
+        if (stc < xs_ || stc > xs_ * ys_ - xs_)
         {
             printf("[PathCalc] Out of bounds\n");
             return false;
@@ -109,16 +110,16 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
             oscillation_detected = true;
         }
 
-        int stcnx = stc + xs_;
-        int stcpx = stc - xs_;
+        int stcnx = stc + xs_; // 正下方的点
+        int stcpx = stc - xs_; // 正上方的点
 
-        // check for potentials at eight positions near cell
+        // step xx 检查当前点附近的8个点的potential
         if (potential[stc] >= POT_HIGH || potential[stc + 1] >= POT_HIGH || potential[stc - 1] >= POT_HIGH
                 || potential[stcnx] >= POT_HIGH || potential[stcnx + 1] >= POT_HIGH || potential[stcnx - 1] >= POT_HIGH
                 || potential[stcpx] >= POT_HIGH || potential[stcpx + 1] >= POT_HIGH || potential[stcpx - 1] >= POT_HIGH
                 || oscillation_detected) {
             ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potential[stc], (int) path.size());
-            // check eight neighbors to find the lowest
+            //  检查8个邻点，找到最小potential的那个点
             int minc = stc;
             int minp = potential[stc];
             int st = stcpx - 1;
@@ -175,39 +176,39 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
             }
         }
 
-        // have a good gradient here
+        // step xx 如果周围的点没有potential极大值,可以求梯度了
         else {
 
-            // get grad at four positions near cell
+            // 获得当前点上下左右四个方向的梯度
             gradCell(potential, stc);
             gradCell(potential, stc + 1);
             gradCell(potential, stcnx);
             gradCell(potential, stcnx + 1);
 
-            // get interpolated gradient
+            // 获取插值的梯度
             float x1 = (1.0 - dx) * gradx_[stc] + dx * gradx_[stc + 1];
             float x2 = (1.0 - dx) * gradx_[stcnx] + dx * gradx_[stcnx + 1];
-            float x = (1.0 - dy) * x1 + dy * x2; // interpolated x
+            float x = (1.0 - dy) * x1 + dy * x2; // 插值 x
             float y1 = (1.0 - dx) * grady_[stc] + dx * grady_[stc + 1];
             float y2 = (1.0 - dx) * grady_[stcnx] + dx * grady_[stcnx + 1];
-            float y = (1.0 - dy) * y1 + dy * y2; // interpolated y
+            float y = (1.0 - dy) * y1 + dy * y2; // 插值 y
 
             // show gradients
             ROS_DEBUG(
                     "[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n", gradx_[stc], grady_[stc], gradx_[stc+1], grady_[stc+1], gradx_[stcnx], grady_[stcnx], gradx_[stcnx+1], grady_[stcnx+1], x, y);
 
-            // check for zero gradient, failed
+            // 检查是否有梯度为零的，有则返回
             if (x == 0.0 && y == 0.0) {
                 ROS_DEBUG("[PathCalc] Zero gradient");
                 return 0;
             }
 
-            // move in the right direction
+            // 向正确的方向移动
             float ss = pathStep_ / hypot(x, y);
             dx += x * ss;
             dy += y * ss;
 
-            // check for overflow
+            // 检查是否有溢出
             if (dx > 1.0) {
                 stc++;
                 dx -= 1.0;
@@ -258,22 +259,18 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
  }
  */
 
-//
-// gradient calculations
-//
-// calculate gradient at a cell
-// positive value are to the right and down
+//  该函数对当前单元格进行梯度计算，正值表示向右和向下
 float GradientPath::gradCell(float* potential, int n) {
     if (gradx_[n] + grady_[n] > 0.0)    // check this cell
         return 1.0;
 
-    if (n < xs_ || n > xs_ * ys_ - xs_)    // would be out of bounds
+    if (n < xs_ || n > xs_ * ys_ - xs_)    // 如果越界的话
         return 0.0;
     float cv = potential[n];
     float dx = 0.0;
     float dy = 0.0;
 
-    // check for in an obstacle
+    //  如果有障碍物
     if (cv >= POT_HIGH) {
         if (potential[n - 1] < POT_HIGH)
             dx = -lethal_cost_;
@@ -286,7 +283,7 @@ float GradientPath::gradCell(float* potential, int n) {
             dy = lethal_cost_;
     }
 
-    else                // not in an obstacle
+    else  // 如果没有障碍物
     {
         // dx calc, average to sides
         if (potential[n - 1] < POT_HIGH)
@@ -301,7 +298,7 @@ float GradientPath::gradCell(float* potential, int n) {
             dy += cv - potential[n + xs_];
     }
 
-    // normalize
+    // 归一化
     float norm = hypot(dx, dy);
     if (norm > 0) {
         norm = 1.0 / norm;

@@ -46,9 +46,9 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
     current.first = end_x;
     current.second = end_y;
 
-    // step 1.将目标点的(x,y)作为当前点加入path
     int start_index = getIndex(start_x, start_y);
 
+    // step 1.将目标点的(x,y)作为当前点加入path
     path.push_back(current);
     int c = 0;
     int ns = xs_ * ys_;
@@ -57,7 +57,7 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
     while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
-        // step 3.搜索当前点的四周的四个临近点，选取这四个临近点的potential的值最小的点
+        // step 3.搜索当前点周围8个临近点，选取这8个临近点中potential的值最小的点
         for (int xd = -1; xd <= 1; xd++) {
             for (int yd = -1; yd <= 1; yd++) {
                 if (xd == 0 && yd == 0)

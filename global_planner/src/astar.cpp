@@ -88,21 +88,22 @@ bool AStarExpansion::calculatePotentials(unsigned char* costs, double start_x, d
 }
 
 // 添加点并更新代价函数
-//add函数中，如果是已经添加的的点则忽略，根据costmap的值如果是障碍物的点也忽略。
 void AStarExpansion::add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x,
                          int end_y) {
     // 超出范围， ns_为栅格总数
     if (next_i < 0 || next_i >= ns_)
         return;
-    // 已经搜索过
+    // 忽略已经搜索过的点
     if (potential[next_i] < POT_HIGH)
         return;
-    // 障碍物
+    // 忽略障碍物点
     if(costs[next_i]>=lethal_cost_ && !(unknown_ && costs[next_i]==costmap_2d::NO_INFORMATION))
         return;
     // p_calc_->calculatePotential() 采用简单方法计算值为costs[next_i] + neutral_cost_+ prev_potentia  地图代价+单格距离代价(初始化为50)+之前路径代价 为G
     potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);
+    // 算出该点的x,y坐标
     int x = next_i % nx_, y = next_i / nx_;
+    // 注意这里计算的是曼哈顿距离不是欧几里得距离
     float distance = abs(end_x - x) + abs(end_y - y);
 
     // potential[next_i]：    起始点到当前点的cost即g(n)
