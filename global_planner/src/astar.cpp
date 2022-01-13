@@ -110,7 +110,7 @@ void AStarExpansion::add(unsigned char* costs, float* potential, float prev_pote
     // f(n)=g(n)+h(n)：  计算完这两个cost后，加起来即为f(n)，将其存入队列中
     // 加入搜索向量
     queue_.push_back(Index(next_i, potential[next_i] + distance * neutral_cost_));
-    // 对加入的再进行堆排序， 把最小代价点放到front队头queue_[0]
+    // 对加入的再进行堆排序， 把最小代价点放到front堆头queue_[0]
     std::push_heap(queue_.begin(), queue_.end(), greater1());
 }
 
