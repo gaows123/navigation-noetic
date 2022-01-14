@@ -473,7 +473,7 @@ AmclNode::AmclNode() :
   tf_.reset(new tf2_ros::Buffer());
   tfl_.reset(new tf2_ros::TransformListener(*tf_));
 
-  // 定义话题及订阅等，具体在本文第2章有讲
+  // 定义话题及订阅
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
@@ -1139,7 +1139,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
   int laser_index = -1;
 
-  // 检查是否有base_link -> laser 的转换，支持多个激光雷达？
+  // step xx 检查是否有base_link -> laser 的转换，支持多个激光雷达？
   if(frame_to_laser_.find(laser_scan_frame_id) == frame_to_laser_.end())
   {
     // 如果没有该转换
@@ -1184,7 +1184,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     laser_index = frame_to_laser_[laser_scan_frame_id];
   }
 
-  // 当这帧的激光扫描数据传入时，机器人在哪里(机器人base在odom中的位姿)
+  // step xx 获得机器人base在odom坐标系中的位姿（获得当前激光帧时）
   pf_vector_t pose;
   if(!getOdomPose(latest_odom_pose_, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, base_frame_id_))
@@ -1205,7 +1205,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     delta.v[1] = pose.v[1] - pf_odom_pose_.v[1];
     delta.v[2] = angle_diff(pose.v[2], pf_odom_pose_.v[2]);
 
-    // 是否需要更新滤波器
+    //! important: 是否需要更新滤波器
     bool update = fabs(delta.v[0]) > d_thresh_ ||
                   fabs(delta.v[1]) > d_thresh_ ||
                   fabs(delta.v[2]) > a_thresh_;
