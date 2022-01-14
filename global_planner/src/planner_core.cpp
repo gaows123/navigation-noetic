@@ -375,7 +375,7 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     }
 
     ros::Time plan_time = ros::Time::now();
-    // 将path中每个点转换到world下，再加入方向信息，依次存储到plan中
+    // 将path中每个点转换到world下，方向信息还没加入，这里统一设为零，然后依次存储到plan中
     for (int i = path.size() -1; i>=0; i--) {
         std::pair<float, float> point = path[i];
         // 把map的全局路径转换到world下

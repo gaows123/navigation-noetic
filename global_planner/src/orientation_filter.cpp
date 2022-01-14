@@ -49,44 +49,50 @@ void set_angle(geometry_msgs::PoseStamped* pose, double angle)
   tf2::convert(q, pose->pose.orientation);
 }
 
-void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start, 
+void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
                                     std::vector<geometry_msgs::PoseStamped>& path)
 {
     int n = path.size();
     if (n == 0) return;
     switch(omode_) {
+        // 路径点方向为路径方向(前面的点到后面的点的方向)
         case FORWARD:
             for(int i=0;i<n-1;i++){
                 setAngleBasedOnPositionDerivative(path, i);
             }
             break;
+        // 路径点方向为路径方向的相反方向(后面的点到前面的点的方向)
         case BACKWARD:
             for(int i=0;i<n-1;i++){
                 setAngleBasedOnPositionDerivative(path, i);
                 set_angle(&path[i], angles::normalize_angle(tf2::getYaw(path[i].pose.orientation) + M_PI));
             }
             break;
+        // 路径点方向为路径方向的左方
         case LEFTWARD:
             for(int i=0;i<n-1;i++){
                 setAngleBasedOnPositionDerivative(path, i);
                 set_angle(&path[i], angles::normalize_angle(tf2::getYaw(path[i].pose.orientation) - M_PI_2));
             }
             break;
+        // 路径点方向为路径方向的右方
         case RIGHTWARD:
             for(int i=0;i<n-1;i++){
                 setAngleBasedOnPositionDerivative(path, i);
                 set_angle(&path[i], angles::normalize_angle(tf2::getYaw(path[i].pose.orientation) + M_PI_2));
             }
             break;
+        // 方向插值，起始点的朝向到目标点的朝向之间进行插值
         case INTERPOLATE:
             path[0].pose.orientation = start.pose.orientation;
             interpolate(path, 0, n-1);
             break;
+        // 路径点方向先更新为路径方向，如果有的点方向变化很大，该点和终点之间的点的方向再被插值更新一次，起到平滑的作用
         case FORWARDTHENINTERPOLATE:
             for(int i=0;i<n-1;i++){
                 setAngleBasedOnPositionDerivative(path, i);
             }
-            
+
             int i=n-3;
             const double last = tf2::getYaw(path[i].pose.orientation);
             while( i>0 ){
@@ -97,13 +103,13 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
                 else
                     i--;
             }
-            
+
             path[0].pose.orientation = start.pose.orientation;
             interpolate(path, i, n-1);
-            break;           
+            break;
     }
 }
-    
+// 根据位置计算两点之间的朝向
 void OrientationFilter::setAngleBasedOnPositionDerivative(std::vector<geometry_msgs::PoseStamped>& path, int index)
 {
   int index0 = std::max(0, index - window_size_);
@@ -113,12 +119,13 @@ void OrientationFilter::setAngleBasedOnPositionDerivative(std::vector<geometry_m
          y0 = path[index0].pose.position.y,
          x1 = path[index1].pose.position.x,
          y1 = path[index1].pose.position.y;
-         
+
   double angle = atan2(y1-y0,x1-x0);
   set_angle(&path[index], angle);
 }
 
-void OrientationFilter::interpolate(std::vector<geometry_msgs::PoseStamped>& path, 
+// 角度插值函数
+void OrientationFilter::interpolate(std::vector<geometry_msgs::PoseStamped>& path,
                                     int start_index, int end_index)
 {
     const double start_yaw = tf2::getYaw(path[start_index].pose.orientation),
@@ -130,6 +137,6 @@ void OrientationFilter::interpolate(std::vector<geometry_msgs::PoseStamped>& pat
         set_angle(&path[i], angle);
     }
 }
-                                   
+
 
 };
