@@ -58,7 +58,7 @@ typedef double (*pf_sensor_model_fn_t) (void *sensor_data,
                                         struct _pf_sample_set_t* set);
 
 
-// Information for a single sample
+// 单个粒子代表位姿和相关的权重
 typedef struct
 {
   // Pose represented by this sample
@@ -70,7 +70,7 @@ typedef struct
 } pf_sample_t;
 
 
-// Information for a cluster of samples
+// 一个位姿的粒子群
 typedef struct
 {
   // Number of samples
@@ -89,7 +89,7 @@ typedef struct
 } pf_cluster_t;
 
 
-// Information for a set of samples
+//  粒子集合，多个位姿粒子群
 typedef struct _pf_sample_set_t
 {
   // The samples
@@ -111,7 +111,7 @@ typedef struct _pf_sample_set_t
 } pf_sample_set_t;
 
 
-// Information for an entire filter
+// 代表整个粒子滤波器的结构体
 typedef struct _pf_t
 {
   // This min and max number of samples
