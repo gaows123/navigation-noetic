@@ -98,7 +98,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   // implement thread unsafe updateBounds() functions.
   boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
 
-  // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
+  // 如果用滚动的代价地图，需要用机器人的位置更新原点
   if (rolling_window_)
   {
     double new_origin_x = robot_x - costmap_.getSizeInMetersX() / 2;
@@ -112,6 +112,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
 
+  // 依次更新每个layer的区域
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
