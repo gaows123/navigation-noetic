@@ -359,7 +359,7 @@ AmclNode::AmclNode() :
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
-  // 参数服务器中获取参数
+  // step 1 : 参数服务器中获取参数
   private_nh_.param("use_map_topic", use_map_topic_, false);
   private_nh_.param("first_map_only", first_map_only_, false);
 
@@ -402,7 +402,7 @@ AmclNode::AmclNode() :
   private_nh_.param("laser_lambda_short", lambda_short_, 0.1);
   private_nh_.param("laser_likelihood_max_dist", laser_likelihood_max_dist_, 2.0);
 
-  // 测量模型选择，具体参考《概率机器人》第6章内容，这里默认的likelihood_field是6.4节的似然域模型
+  // step 2: 选择测量模型，参考《概率机器人》第6章，默认likelihood_field参考6.4节的似然域模型
   std::string tmp_model_type;
   private_nh_.param("laser_model_type", tmp_model_type, std::string("likelihood_field"));
   if(tmp_model_type == "beam")
@@ -418,7 +418,8 @@ AmclNode::AmclNode() :
              tmp_model_type.c_str());
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
   }
-  // 机器人模型选择，具体参考《概率机器人》5.4节里程计运动模型内容，这里默认的diff应该是差分型（两轮驱动）的机器人？，另外一个是全向机器人？
+
+  // step 3: 选择机器人运动学模型，默认是差分机器人，参考《概率机器人》5.4节里程计运动模型
   private_nh_.param("odom_model_type", tmp_model_type, std::string("diff"));
   if(tmp_model_type == "diff")
     odom_model_type_ = ODOM_MODEL_DIFF;
@@ -448,7 +449,7 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
 
-  // For diagnostics
+  // 用于诊断
   private_nh_.param("std_warn_level_x", std_warn_level_x_, 0.2);
   private_nh_.param("std_warn_level_y", std_warn_level_y_, 0.2);
   private_nh_.param("std_warn_level_yaw", std_warn_level_yaw_, 0.1);
@@ -465,7 +466,7 @@ AmclNode::AmclNode() :
   base_frame_id_ = stripSlash(base_frame_id_);
   global_frame_id_ = stripSlash(global_frame_id_);
 
-  // 从参数服务器中获取初始位姿及初始分布
+  // step 3: 从参数服务器中得到初始位姿和初始协方差
   updatePoseFromServer();
 
   cloud_pub_interval.fromSec(1.0);
@@ -473,7 +474,7 @@ AmclNode::AmclNode() :
   tf_.reset(new tf2_ros::Buffer());
   tfl_.reset(new tf2_ros::TransformListener(*tf_));
 
-  // 定义话题及订阅
+  // step 4 : 定义话题,订阅和发布
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
@@ -493,6 +494,7 @@ AmclNode::AmclNode() :
                                                    this, _1));
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 
+  // 要么订阅要么通过服务获得地图
   if(use_map_topic_) {
     map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
     ROS_INFO("Subscribed to map topic.");
@@ -501,6 +503,7 @@ AmclNode::AmclNode() :
   }
   m_force_update = false;
 
+  // step 5: 参数动态配置
   dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
@@ -849,7 +852,7 @@ AmclNode::requestMap()
 {
   boost::recursive_mutex::scoped_lock ml(configuration_mutex_);
 
-  // get map via RPC
+  // RPC采用客户端/服务端的模式，通过request-response消息模式实现地图获取
   nav_msgs::GetMap::Request  req;
   nav_msgs::GetMap::Response resp;
   ROS_INFO("Requesting the map...");
@@ -879,7 +882,7 @@ AmclNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
 void
 AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 {
-  // 加锁保护
+  // step 1 : 加锁保护
   boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
 
   ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
@@ -887,13 +890,13 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
            msg.info.height,
            msg.info.resolution);
 
-  // step xx  msg的frame_id 需要与 global_frame_id_ 一致
+  // step 2： msg的frame_id 需要与 global_frame_id_ 一致
   if(msg.header.frame_id != global_frame_id_)
     ROS_WARN("Frame_id of map received:'%s' doesn't match global_frame_id:'%s'. This could cause issues with reading published topics",
              msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
 
-  // step xx  释放 map_, pf_, odom_, laser_的空间
+  // step 3： 释放 map_, pf_, odom_, laser_的空间
   freeMapDependentMemory();
   // Clear queued laser objects because they hold pointers to the existing
   // map, #5202.
@@ -901,19 +904,19 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   lasers_update_.clear();
   frame_to_laser_.clear();
 
-  // 转换成标准地图 0 转换成-1(自由空间);100转换成 +1（障碍物）; 其他的 转换成0（未知）
+  // step 4: 转换成标准地图 0 转换成-1(自由空间);100转换成 +1（障碍物）; 其他的 转换成0（未知）
   map_ = convertMap(msg);
 
-// step xx  将不是自由空间点的坐标保存下来
+// step 5: 将自由空间点的坐标保存下来
 #if NEW_UNIFORM_SAMPLING
-  // Index of free space
+  // 自由空间的索引
   free_space_indices.resize(0);
   for(int i = 0; i < map_->size_x; i++)
     for(int j = 0; j < map_->size_y; j++)
       if(map_->cells[MAP_INDEX(map_,i,j)].occ_state == -1)
         free_space_indices.push_back(std::make_pair(i,j));
 #endif
-  // 创建粒子滤波器
+  // step 6: 创建粒子滤波器
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
@@ -922,7 +925,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
-  // step xx 初始化粒子滤波器， 从参数服务器获取初始位姿及方差放到pf中
+  // step 7: 初始化粒子滤波器， 从参数服务器获取初始位姿及方差放到pf中
   updatePoseFromServer();
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = init_pose_[0];
@@ -935,7 +938,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
   pf_init_ = false;
 
-  // step xx 实例化传感器对象
+  // step 8: 实例化传感器（里程计和激光雷达）
   // Odometry 里程计
   delete odom_;
   odom_ = new AMCLOdom();
@@ -965,7 +968,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
     ROS_INFO("Done initializing likelihood field model.");
   }
 
-  // step xx 确定初始位姿，最后才做这一步为了防止初始位姿比地图信息早到
+  // step 9: 确定初始位姿，最后才做这一步为了防止初始位姿比地图信息早到
   applyInitialPose();
 
 }
@@ -1136,10 +1139,11 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   if( map_ == NULL ) {
     return;
   }
+  // step 1 : 收到了map，开始加锁保护
   boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
   int laser_index = -1;
 
-  // step xx 检查是否有base_link -> laser 的转换，支持多个激光雷达？
+  // step 2: 检查是否有base_link -> laser 的转换，支持多个激光雷达？
   if(frame_to_laser_.find(laser_scan_frame_id) == frame_to_laser_.end())
   {
     // 如果没有该转换
@@ -1184,7 +1188,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     laser_index = frame_to_laser_[laser_scan_frame_id];
   }
 
-  // step xx 获得机器人base在odom坐标系中的位姿（获得当前激光帧时）
+  // step 3: 获得机器人base在odom坐标系中的位姿（获得当前激光帧时）
   pf_vector_t pose;
   if(!getOdomPose(latest_odom_pose_, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, base_frame_id_))
@@ -1196,7 +1200,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   pf_vector_t delta = pf_vector_zero();
 
-  // step 如果不是第一帧激光扫描，看运动变化是否超过阈值，超过了则更新（第一帧是指更新了地图或者更新初始位姿）
+  // step 4: 如果不是第一帧激光扫描，看运动变化是否超过阈值，超过了则更新（第一帧是指更新了地图或者更新初始位姿）
   if(pf_init_)
   {
     // 计算位姿的变化, 存储到delta 中
@@ -1217,17 +1221,18 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       for(unsigned int i=0; i < lasers_update_.size(); i++)
         lasers_update_[i] = true;
   }
-  // step 如果是第一帧激光扫描则初始化一些值
+
   bool force_publication = false;
+  // step 5.1: 如果是第一帧激光扫描则初始化一些参数
   if(!pf_init_)
   {
-    // 最近一次滤波器更新时的位姿
+    // 最近一次滤波器更新时的位姿，用到odom位姿
     pf_odom_pose_ = pose;
 
-    // Filter is now initialized
+    // 滤波器现在初始化了
     pf_init_ = true;
 
-    // Should update sensor data
+    // 应该更新传感器数据
     for(unsigned int i=0; i < lasers_update_.size(); i++)
       lasers_update_[i] = true;
 
@@ -1235,7 +1240,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     resample_count_ = 0;
   }
-  // step xx 如果已经初始化并且已经运动了，更新运动模型
+  // step 5.2: 如果已经初始化并且已经运动了，更新运动模型
   else if(pf_init_ && lasers_update_[laser_index])
   {
     //printf("pose\n");
@@ -1256,7 +1261,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   bool resampled = false;
-  // step xx 已经运动了，更新运动模型
+  // step 6: 已经运动了，更新运动模型
   if(lasers_update_[laser_index])
   {
     AMCLLaserData ldata;
@@ -1373,7 +1378,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
   }
 
-  // step xx 如果需要重采样或者强制发布
+  // step 7： 如果需要重采样或者强制发布
   if(resampled || force_publication)
   {
     // Read out the current hypotheses
@@ -1381,7 +1386,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     int max_weight_hyp = -1;
     std::vector<amcl_hyp_t> hyps;
     hyps.resize(pf_->sets[pf_->current_set].cluster_count);
-    // step xx 遍历所有粒子簇，找出权重均值最大的簇，其平均位姿就是我们要求的机器人后验位姿，到此一次循环已经所有完成
+    // step 7.1: 遍历所有粒子簇，找出权重均值最大的簇，其平均位姿就是我们要求的机器人后验位姿，到此一次循环已经所有完成
     for(int hyp_count = 0;
         hyp_count < pf_->sets[pf_->current_set].cluster_count; hyp_count++)
     {
@@ -1404,7 +1409,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         max_weight_hyp = hyp_count;
       }
     }
-    // step xx 将位姿(后验位姿xyz)，粒子集合，协方差矩阵 (和表示三个转角信息的6D协方差矩阵) 等进行更新、发布
+    // step 7.2： 将位姿(后验位姿xyz)，粒子集合，协方差矩阵 (和表示三个转角信息的6D协方差矩阵) 等进行更新、发布
     if(max_weight > 0.0)
     {
       ROS_DEBUG("Max weight pose: %.3f %.3f %.3f",
@@ -1417,7 +1422,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
          pf_matrix_fprintf(hyps[max_weight_hyp].pf_pose_cov, stdout, "%6.3f");
          puts("");
        */
-
+      // step 7.2.1 用于发布的位姿和分布
       geometry_msgs::PoseWithCovarianceStamped p;
       // 填入 header
       p.header.frame_id = global_frame_id_;
@@ -1429,7 +1434,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       tf2::Quaternion q;
       q.setRPY(0, 0, hyps[max_weight_hyp].pf_pose_mean.v[2]);
       tf2::convert(q, p.pose.pose.orientation);
-      // step xx 拷贝数据到协方差， 从3D 转换成6D
+      // step 7.2.2 拷贝数据到协方差， 从3D 转换成6D
       pf_sample_set_t* set = pf_->sets + pf_->current_set;
       for(int i=0; i<2; i++)
       {
@@ -1511,7 +1516,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ROS_ERROR("No pose!");
     }
   }
-  // step xx 如果上次tf有效
+  // step 8 如果上次tf有效
   else if(latest_tf_valid_)
   {
     if (tf_broadcast_ == true)
