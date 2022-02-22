@@ -228,8 +228,8 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
   double dt = sim_time_ / num_steps;
   traj.time_delta_ = dt;
 
-  Eigen::Vector3f loop_vel;
-  if (continued_acceleration_) {  // 对loop_vel进行初始化
+  Eigen::Vector3f loop_vel;// 对loop_vel进行初始化
+  if (continued_acceleration_) {
     // use_dwa==false，则采用连续加速的策略
     // 即仿真出的轨迹中不同点对应的速度是变化的，此时将轨迹中保存的对应速度设为基于当前速度第一次加速出的速度。
     // 否则，轨迹中的各个点为同样的速度，即sample_target_vel，此时轨迹中保存的速度也是该速度

@@ -581,7 +581,7 @@ namespace base_local_planner{
     //any cell with a cost greater than the size of the map is impossible 单元格不应该超过地图的大小
     double impossible_cost = path_map_.obstacleCosts();
 
-    //if we're performing an escape we won't allow moving forward 如果机器人正在逃跑，前进不是允许的
+    // 如果机器人正在脱困，前进不是允许的
     if (!escaping_) {
       //loop through all x velocities 遍历所有的x 速度
       for(int i = 0; i < vx_samples_; ++i) {
