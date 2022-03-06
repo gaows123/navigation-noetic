@@ -145,6 +145,8 @@ PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavi
 
 ![classclear__costmap__recovery_1_1_clear_costmap_recovery__coll__graph](navigation学习.assets/classclear__costmap__recovery_1_1_clear_costmap_recovery__coll__graph.png)
 
+
+
 #### 1.2.3.4 RotateRecovery协作图
 
 ![classrotate__recovery_1_1_rotate_recovery__coll__graph](navigation学习.assets/classrotate__recovery_1_1_rotate_recovery__coll__graph.png)
@@ -189,7 +191,7 @@ move_base需要选择插件，包括三种插件：`base_local_planner`、`base_
 
 **base_global_planner插件：**
 
-- parrot_planner: 简单的全局规划算法
+- carrot_planner: 简单的全局规划算法
 - navfn: Dijkstra和A*全局规划算法
 - global_planner: 重新实现了Dijkstra和A*全局规划算法，navfn的改进版
 
@@ -321,3 +323,139 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal){
 }
 ```
 
+## 1.4 RecoveryBehavior子类详解
+
+父类RecoveryBehavior提供恢复行为的接口，navigation stack调用的所有恢复行为模块都要实现这个接口。
+
+<img src="navigation学习.assets/recovery_behavior.png" alt="recovery_behavior" style="zoom:50%;" />
+
+### 1.4.1 ClearCostmapRecovery类
+
+#### 1.4.1.1 initialize()
+
+```c++
+// 该插件将costmap中给定半径（reset_distance_默认值3.0）范围之内的区域(正方形)进行清理，即将栅格状态更新为未知信息
+PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)；
+//默认是3.0米的正方形，重置为未知状态
+private_nh.param("reset_distance", reset_distance_, 3.0);
+//清理的是障碍物层
+clearable_layers_default.push_back( std::string("obstacles") );
+```
+
+#### 1.4.1.2 runBehavior()
+
+```c++
+//调用clear()函数进行清理
+if (affected_maps_ == "global" || affected_maps_ == "both")
+{
+    clear(global_costmap_);
+}
+
+if (affected_maps_ == "local" || affected_maps_ == "both")
+{
+    clear(local_costmap_);
+}
+```
+
+#### 1.4.1.3 clear()
+
+```c++
+//获取地图插件
+std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+//获取机器人位姿
+double x = pose.pose.position.x;
+double y = pose.pose.position.y;
+//遍历插件地图
+for (pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+	clearMap(costmap, x, y);
+}
+```
+
+#### 1.4.1.4 clearMap()
+
+将正方形区域的栅格更新为**未知信息**
+
+### 1.4.2 RotateRecovery类
+
+#### 1.4.2.1 initialize()
+
+```c++
+// 默认会模拟仿真每一度(degree)旋转的情况,0.017弧度
+private_nh.param("sim_granularity", sim_granularity_, 0.017);
+private_nh.param("frequency", frequency_, 20.0);
+```
+
+#### 1.4.2.2 runBehavior()
+
+### 1.4.3 MoveSlowAndClear类
+
+将正方形区域的栅格更新为**自由区域**。所以有碰撞风险，需要速度很慢才行。
+
+#### 1.4.3.1 runBehavior()
+
+```c++
+//获取机器人位姿
+global_costmap_->getRobotPose(global_pose);
+local_costmap_->getRobotPose(local_pose);
+
+//根据pose确定要清除的区域大小(正方形)，clearing_distance_是关键的参数
+std::vector<geometry_msgs::Point> global_poly, local_poly;
+
+// 清除全局代价地图中特定区域
+std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins;
+plugins= global_costmap_->getLayeredCostmap()->getPlugins();
+costmap->setConvexPolygonCost(global_poly, costmap_2d::FREE_SPACE);
+
+// 清除局部代价地图中特定区域
+plugins = local_costmap_->getLayeredCostmap()->getPlugins();
+costmap->setConvexPolygonCost(local_poly, costmap_2d::FREE_SPACE);
+
+//设置机器人速度
+//limit the speed of the robot until it moves a certain distance
+setRobotSpeed(limited_trans_speed_, limited_rot_speed_);
+limit_set_ = true;
+//10Hz的频率去check距离
+distance_check_timer_ = private_nh_.createTimer(ros::Duration(0.1), &MoveSlowAndClear::distanceCheck, this);
+
+
+```
+
+## 1.5 costmap_2d
+
+### 1.5.1 分层地图简介
+
+分为有标准层、新功能层、人机交互层三大类，共七层代价地图。
+
+常用的有三层Inflation,Obstacle,Static。Master是管理这三层的。首先updateBounds更新各层的边界，然后updateValues更新value。
+
+- 完整的分层地图如下：
+
+![image-20220306223841081](navigation学习.assets/image-20220306223841081.png)
+
+- 分层地图更新的过程：
+
+![image-20220306221333703](navigation学习.assets/image-20220306221333703.png)
+
+- 分层地图的分类
+
+```mermaid
+graph LR
+	A(标准层) --- A1(Static Map Layer)
+	A---A2(Obstacles Layer)
+	A---A3(Inflation Layer)
+	B(新功能层)---B1(Sonar Layer //声呐)
+	B---B2(Caution Zones Layer //尽量不去的区域)
+	B---B3(Claustrophobic Layer //额外膨胀)
+	C(人机交互层)---C1(Proxemic Layer //远离行人)
+	C---C2(Hallway Layer //靠左靠右)
+	C---C3(Wagon Ruts Layer //人走过的区域代价降低)
+	costmap---A
+	costmap---B
+	costmap---C
+```
+
+### 1.5.2 类继承关系
+
+<img src="navigation学习.assets/costmap_2d.png" alt="costmap_2d" style="zoom:50%;" />
+
+### 1.5.3 实现机制
